@@ -1,0 +1,358 @@
+{
+  "version": "1.0.0",
+  "description": "PURL types and registry URL patterns for package ecosystems",
+  "source": "https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst",
+  "last_updated": "2025-07-24",
+  "types": {
+    "alpm": {
+      "description": "Arch Linux and other users of the libalpm/pacman package manager"
+    },
+    "apk": {
+      "description": "APK-based packages"
+    },
+    "bitbucket": {
+      "description": "Bitbucket-based packages"
+    },
+    "bitnami": {
+      "description": "Bitnami-based packages"
+    },
+    "cargo": {
+      "description": "Rust packages",
+      "registry_config": {
+        "base_url": "https://crates.io/crates",
+        "route_patterns": [
+          "https://crates.io/crates/:name"
+        ],
+        "reverse_regex": "^https://crates\\.io/crates/([^/?#]+)",
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "cocoapods": {
+      "description": "CocoaPods",
+      "registry_config": {
+        "base_url": "https://cocoapods.org/pods",
+        "route_patterns": [
+          "https://cocoapods.org/pods/:name"
+        ],
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "composer": {
+      "description": "Composer PHP packages",
+      "registry_config": {
+        "base_url": "https://packagist.org/packages",
+        "route_patterns": [
+          "https://packagist.org/packages/:namespace/:name"
+        ],
+        "components": {
+          "namespace": true,
+          "namespace_required": true,
+          "version_in_url": false
+        }
+      }
+    },
+    "conan": {
+      "description": "Conan C/C++ packages"
+    },
+    "conda": {
+      "description": "Conda packages",
+      "registry_config": {
+        "base_url": "https://anaconda.org/conda-forge",
+        "route_patterns": [
+          "https://anaconda.org/conda-forge/:name"
+        ],
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "cpan": {
+      "description": "CPAN Perl packages",
+      "registry_config": {
+        "base_url": "https://metacpan.org/dist",
+        "route_patterns": [
+          "https://metacpan.org/dist/:name"
+        ],
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "cran": {
+      "description": "CRAN R packages"
+    },
+    "deb": {
+      "description": "Debian, Debian derivatives, and Ubuntu packages"
+    },
+    "docker": {
+      "description": "Docker images"
+    },
+    "gem": {
+      "description": "RubyGems",
+      "registry_config": {
+        "base_url": "https://rubygems.org/gems",
+        "route_patterns": [
+          "https://rubygems.org/gems/:name",
+          "https://rubygems.org/gems/:name/versions/:version"
+        ],
+        "reverse_regex": "^https://rubygems\\.org/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
+        "components": {
+          "namespace": false,
+          "version_in_url": true,
+          "version_path": "/versions/"
+        }
+      }
+    },
+    "generic": {
+      "description": "Plain packages that do not fit anywhere else"
+    },
+    "github": {
+      "description": "GitHub-based packages"
+    },
+    "golang": {
+      "description": "Go packages",
+      "registry_config": {
+        "base_url": "https://pkg.go.dev",
+        "route_patterns": [
+          "https://pkg.go.dev/:namespace/:name",
+          "https://pkg.go.dev/:name"
+        ],
+        "reverse_regex": "^https://pkg\\.go\\.dev/(?:([^/?#]+)/)?([^/?#]+)",
+        "components": {
+          "namespace": true,
+          "namespace_required": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "hackage": {
+      "description": "Haskell packages",
+      "registry_config": {
+        "base_url": "https://hackage.haskell.org/package",
+        "route_patterns": [
+          "https://hackage.haskell.org/package/:name",
+          "https://hackage.haskell.org/package/:name-:version"
+        ],
+        "reverse_regex": "^https://hackage\\.haskell\\.org/package/([^/?#-]+)(?:-([^/?#]+))?",
+        "components": {
+          "namespace": false,
+          "version_in_url": true,
+          "version_separator": "-"
+        }
+      }
+    },
+    "hex": {
+      "description": "Hex packages",
+      "registry_config": {
+        "base_url": "https://hex.pm/packages",
+        "route_patterns": [
+          "https://hex.pm/packages/:name"
+        ],
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "huggingface": {
+      "description": "Hugging Face ML models"
+    },
+    "luarocks": {
+      "description": "Lua packages installed with LuaRocks"
+    },
+    "maven": {
+      "description": "Maven JARs and related artifacts",
+      "registry_config": {
+        "base_url": "https://mvnrepository.com/artifact",
+        "route_patterns": [
+          "https://mvnrepository.com/artifact/:namespace/:name",
+          "https://mvnrepository.com/artifact/:namespace/:name/:version"
+        ],
+        "reverse_regex": "^https://mvnrepository\\.com/artifact/([^/?#]+)/([^/?#]+)(?:/([^/?#]+))?",
+        "components": {
+          "namespace": true,
+          "namespace_required": true,
+          "version_in_url": true,
+          "version_path": "/"
+        }
+      }
+    },
+    "mlflow": {
+      "description": "MLflow ML models"
+    },
+    "npm": {
+      "description": "Node NPM packages",
+      "registry_config": {
+        "base_url": "https://www.npmjs.com/package",
+        "route_patterns": [
+          "https://www.npmjs.com/package/:namespace/:name",
+          "https://www.npmjs.com/package/:name",
+          "https://www.npmjs.com/package/:namespace/:name/v/:version",
+          "https://www.npmjs.com/package/:name/v/:version"
+        ],
+        "reverse_regex": "^https://(?:www\\.)?npmjs\\.com/package/(?:(@[^/]+)/)?([^/?#]+)(?:/v/([^/?#]+))?",
+        "components": {
+          "namespace": true,
+          "namespace_required": false,
+          "namespace_prefix": "@",
+          "version_in_url": true,
+          "version_path": "/v/"
+        }
+      }
+    },
+    "nuget": {
+      "description": "NuGet .NET packages",
+      "registry_config": {
+        "base_url": "https://www.nuget.org/packages",
+        "route_patterns": [
+          "https://www.nuget.org/packages/:name",
+          "https://www.nuget.org/packages/:name/:version"
+        ],
+        "components": {
+          "namespace": false,
+          "version_in_url": true,
+          "version_path": "/"
+        }
+      }
+    },
+    "oci": {
+      "description": "Artifacts stored in registries that conform to OCI Distribution Specification"
+    },
+    "pub": {
+      "description": "Dart and Flutter packages",
+      "registry_config": {
+        "base_url": "https://pub.dev/packages",
+        "route_patterns": [
+          "https://pub.dev/packages/:name"
+        ],
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "pypi": {
+      "description": "Python packages",
+      "registry_config": {
+        "base_url": "https://pypi.org/project",
+        "route_patterns": [
+          "https://pypi.org/project/:name/",
+          "https://pypi.org/project/:name/:version/"
+        ],
+        "reverse_regex": "^https://pypi\\.org/project/([^/?#]+)/?(?:([^/?#]+)/?)?",
+        "components": {
+          "namespace": false,
+          "version_in_url": true,
+          "version_path": "/",
+          "trailing_slash": true
+        }
+      }
+    },
+    "qpkg": {
+      "description": "QNX packages"
+    },
+    "rpm": {
+      "description": "RPMs"
+    },
+    "swid": {
+      "description": "Software Identification (SWID) tags"
+    },
+    "swift": {
+      "description": "Swift packages",
+      "registry_config": {
+        "base_url": "https://swiftpackageindex.com",
+        "route_patterns": [
+          "https://swiftpackageindex.com/:namespace/:name"
+        ],
+        "components": {
+          "namespace": true,
+          "namespace_required": true,
+          "version_in_url": false
+        }
+      }
+    },
+    "deno": {
+      "description": "Deno packages",
+      "registry_config": {
+        "base_url": "https://deno.land/x",
+        "route_patterns": [
+          "https://deno.land/x/:name",
+          "https://deno.land/x/:name@:version"
+        ],
+        "reverse_regex": "^https://deno\\.land/x/([^/?#@]+)(?:@([^/?#]+))?",
+        "components": {
+          "namespace": false,
+          "version_in_url": true,
+          "version_prefix": "@"
+        }
+      }
+    },
+    "homebrew": {
+      "description": "Homebrew packages",
+      "registry_config": {
+        "base_url": "https://formulae.brew.sh/formula",
+        "route_patterns": [
+          "https://formulae.brew.sh/formula/:name"
+        ],
+        "reverse_regex": "^https://formulae\\.brew\\.sh/formula/([^/?#]+)",
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "bioconductor": {
+      "description": "Bioconductor packages",
+      "registry_config": {
+        "base_url": "https://bioconductor.org/packages",
+        "route_patterns": [
+          "https://bioconductor.org/packages/:name"
+        ],
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "clojars": {
+      "description": "Clojars packages",
+      "registry_config": {
+        "base_url": "https://clojars.org",
+        "route_patterns": [
+          "https://clojars.org/:namespace/:name",
+          "https://clojars.org/:name"
+        ],
+        "components": {
+          "namespace": true,
+          "namespace_required": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "elm": {
+      "description": "Elm packages",
+      "registry_config": {
+        "base_url": "https://package.elm-lang.org/packages",
+        "route_patterns": [
+          "https://package.elm-lang.org/packages/:namespace/:name/latest",
+          "https://package.elm-lang.org/packages/:namespace/:name/:version"
+        ],
+        "reverse_regex": "^https://package\\.elm-lang\\.org/packages/([^/?#]+)/([^/?#]+)(?:/([^/?#]+))?",
+        "components": {
+          "namespace": true,
+          "namespace_required": true,
+          "version_in_url": true,
+          "default_version": "latest"
+        }
+      }
+    }
+  }
+}

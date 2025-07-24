@@ -1,39 +1,299 @@
-# Purl
+# Purl - Package URL Parser for Ruby
 
-TODO: Delete this and the text below, and describe your gem
+A comprehensive Ruby library for parsing, validating, and working with Package URLs (PURLs) as defined by the [PURL specification](https://github.com/package-url/purl-spec).
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/purl`. To experiment with that code, run `bin/console` for an interactive prompt.
+This library provides better error handling than existing solutions with namespaced error types, bidirectional registry URL conversion, and JSON-based configuration for cross-language compatibility.
+
+[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%202.7-red.svg)](https://www.ruby-lang.org/)
+[![Gem Version](https://badge.fury.io/rb/purl.svg)](https://rubygems.org/gems/purl)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**🔗 [Available on RubyGems](https://rubygems.org/gems/purl)**
+
+## Features
+
+- 🎯 **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
+- 🔥 **Better error handling** with namespaced error classes and contextual information
+- 🔄 **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
+- 📋 **Type-specific validation** for conan, cran, and swift packages
+- 🌐 **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
+- 🎨 **Rails-style route patterns** for registry URL templates
+- 📊 **100% compliance** with official PURL specification test suite (59/59 tests passing)
+- 🤝 **Cross-language compatibility** with JSON-based configuration
+- 📚 **Comprehensive documentation** and examples
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+Add this line to your application's Gemfile:
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+gem 'purl'
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+And then execute:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle install
+```
+
+Or install it yourself as:
+
+```bash
+gem install purl
 ```
 
 ## Usage
 
-TODO: Write usage instructions here
+### Basic PURL Parsing
+
+```ruby
+require 'purl'
+
+# Parse a PURL string
+purl = Purl.parse("pkg:gem/rails@7.0.0")
+puts purl.type        # => "gem"
+puts purl.name        # => "rails"
+puts purl.version     # => "7.0.0"
+puts purl.namespace   # => nil
+
+# Parse with namespace and qualifiers
+purl = Purl.parse("pkg:npm/@babel/core@7.0.0?arch=x86_64")
+puts purl.type        # => "npm"
+puts purl.namespace   # => "@babel"
+puts purl.name        # => "core"
+puts purl.version     # => "7.0.0"
+puts purl.qualifiers  # => {"arch" => "x86_64"}
+```
+
+### Creating PURLs
+
+```ruby
+# Create a PURL object
+purl = Purl::PackageURL.new(
+  type: "maven",
+  namespace: "org.apache.commons",
+  name: "commons-lang3",
+  version: "3.12.0"
+)
+
+puts purl.to_s  # => "pkg:maven/org.apache.commons/commons-lang3@3.12.0"
+```
+
+### Registry URL Generation
+
+```ruby
+# Generate registry URLs from PURLs
+purl = Purl.parse("pkg:gem/rails@7.0.0")
+puts purl.registry_url                # => "https://rubygems.org/gems/rails"
+puts purl.registry_url_with_version   # => "https://rubygems.org/gems/rails/versions/7.0.0"
+
+# Check if registry URL generation is supported
+puts purl.supports_registry_url?      # => true
+
+# NPM with scoped packages
+purl = Purl.parse("pkg:npm/@babel/core@7.0.0")
+puts purl.registry_url                # => "https://www.npmjs.com/package/@babel/core"
+```
+
+### Reverse Parsing: Registry URLs to PURLs
+
+```ruby
+# Parse registry URLs back to PURLs
+purl = Purl.from_registry_url("https://rubygems.org/gems/rails/versions/7.0.0")
+puts purl.to_s  # => "pkg:gem/rails@7.0.0"
+
+# Works with various registries
+purl = Purl.from_registry_url("https://www.npmjs.com/package/@babel/core")
+puts purl.to_s  # => "pkg:npm/@babel/core"
+
+purl = Purl.from_registry_url("https://pypi.org/project/django/4.0.0/")
+puts purl.to_s  # => "pkg:pypi/django@4.0.0"
+```
+
+### Route Patterns
+
+```ruby
+# Get route patterns for a package type (Rails-style)
+patterns = Purl::RegistryURL.route_patterns_for("gem")
+# => ["https://rubygems.org/gems/:name", "https://rubygems.org/gems/:name/versions/:version"]
+
+# Get all route patterns
+all_patterns = Purl::RegistryURL.all_route_patterns
+puts all_patterns["npm"]
+# => ["https://www.npmjs.com/package/:namespace/:name", "https://www.npmjs.com/package/:name", ...]
+```
+
+### Package Type Information
+
+```ruby
+# Get all known PURL types
+puts Purl.known_types.length          # => 32
+puts Purl.known_types.include?("gem") # => true
+
+# Check type support
+puts Purl.known_type?("gem")                    # => true
+puts Purl.registry_supported_types              # => ["cargo", "gem", "maven", "npm", ...]
+puts Purl.reverse_parsing_supported_types       # => ["cargo", "gem", "maven", "npm", ...]
+
+# Get detailed type information
+info = Purl.type_info("gem")
+puts info[:known]                     # => true
+puts info[:registry_url_generation]   # => true
+puts info[:reverse_parsing]           # => true
+puts info[:route_patterns]            # => ["https://rubygems.org/gems/:name", ...]
+```
+
+### Error Handling
+
+```ruby
+# Detailed error types with context
+begin
+  Purl.parse("invalid-purl")
+rescue Purl::InvalidSchemeError => e
+  puts "Scheme error: #{e.message}"
+rescue Purl::ParseError => e
+  puts "Parse error: #{e.message}"
+  puts "Component: #{e.component}"
+  puts "Value: #{e.value}"
+end
+
+# Type-specific validation errors
+begin
+  Purl::PackageURL.new(type: "swift", name: "Alamofire")  # Swift requires namespace
+rescue Purl::ValidationError => e
+  puts e.message  # => "Swift PURLs require a namespace to be unambiguous"
+end
+```
+
+### Supported Package Types
+
+The library supports 37 package types (32 official + 5 additional ecosystems):
+
+**Registry URL Generation (20 types):**
+- `bioconductor` (R/Bioconductor) - bioconductor.org
+- `cargo` (Rust) - crates.io
+- `clojars` (Clojure) - clojars.org
+- `cocoapods` (iOS) - cocoapods.org
+- `composer` (PHP) - packagist.org
+- `conda` (Python) - anaconda.org
+- `cpan` (Perl) - metacpan.org
+- `deno` (Deno) - deno.land/x
+- `elm` (Elm) - package.elm-lang.org
+- `gem` (Ruby) - rubygems.org  
+- `golang` (Go) - pkg.go.dev
+- `hackage` (Haskell) - hackage.haskell.org
+- `hex` (Elixir) - hex.pm
+- `homebrew` (macOS) - formulae.brew.sh
+- `maven` (Java) - mvnrepository.com
+- `npm` (Node.js) - npmjs.com
+- `nuget` (.NET) - nuget.org
+- `pub` (Dart) - pub.dev
+- `pypi` (Python) - pypi.org
+- `swift` (Swift) - swiftpackageindex.com
+
+**Reverse Parsing (10 types):**
+- `cargo`, `deno`, `elm`, `gem`, `golang`, `hackage`, `homebrew`, `maven`, `npm`, `pypi`
+
+**All 37 Supported Types:**
+`alpm`, `apk`, `bioconductor`, `bitbucket`, `bitnami`, `cargo`, `clojars`, `cocoapods`, `composer`, `conan`, `conda`, `cpan`, `cran`, `deb`, `deno`, `docker`, `elm`, `gem`, `generic`, `github`, `golang`, `hackage`, `hex`, `homebrew`, `huggingface`, `luarocks`, `maven`, `mlflow`, `npm`, `nuget`, `oci`, `pub`, `pypi`, `qpkg`, `rpm`, `swid`, `swift`
+
+## Specification Compliance
+
+- **100% compliance** with the official PURL specification test suite (59/59 tests passing)
+- **All 32 official package types** plus 5 additional ecosystem types supported
+- **Type-specific validation** for conan, cran, swift, cpan, and mlflow packages
+- **Proper error handling** for invalid PURLs that should be rejected
+
+## JSON Configuration
+
+Package types and registry patterns are stored in `purl-types.json` for easy contribution and cross-language compatibility:
+
+```json
+{
+  "version": "1.0.0",
+  "description": "PURL types and registry URL patterns for package ecosystems",
+  "types": {
+    "gem": {
+      "description": "RubyGems",
+      "registry_support": true,
+      "registry_config": {
+        "base_url": "https://rubygems.org/gems",
+        "route_patterns": ["https://rubygems.org/gems/:name"],
+        "reverse_parsing": true
+      }
+    }
+  }
+}
+```
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```bash
+# Run tests
+rake test
+
+# Run specification compliance tests
+rake spec:compliance
+
+# Update test cases from official PURL spec
+rake spec:update
+
+# Show type information
+rake spec:types
+
+# Verify types against official specification
+rake spec:verify_types
+```
+
+### Rake Tasks
+
+- `rake spec:update` - Fetch latest test cases from official PURL spec repository
+- `rake spec:compliance` - Run compliance tests against official test suite  
+- `rake spec:types` - Show information about all PURL types and their support
+- `rake spec:verify_types` - Verify our types list against official specification
+- `rake spec:debug` - Show detailed info about failing test cases
+
+## Funding
+
+If you find this project useful, please consider supporting its development:
+
+- 💝 [GitHub Sponsors](https://github.com/sponsors/andrew)
+- ☕ [Buy me a coffee](https://www.buymeacoffee.com/andrew)
+
+Your support helps maintain and improve this library for the entire Ruby community.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/purl. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/purl/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Make your changes
+4. Add tests for your changes
+5. Ensure all tests pass (`rake test`)
+6. Commit your changes (`git commit -am 'Add some feature'`)
+7. Push to the branch (`git push origin my-new-feature`)
+8. Create new Pull Request
+
+### Adding New Package Types
+
+To add support for a new package type:
+
+1. Update `purl-types.json` with the new type configuration
+2. Add registry URL patterns if applicable
+3. Add type-specific validation rules if needed in `lib/purl/package_url.rb`
+4. Add tests for the new functionality
+
+## License
+
+This gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes and releases.
 
 ## Code of Conduct
 
-Everyone interacting in the Purl project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/purl/blob/main/CODE_OF_CONDUCT.md).
+Everyone interacting in the Purl project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
