@@ -305,6 +305,41 @@ class TestPurl < Minitest::Test
     end
   end
 
+  def test_with_method
+    original = Purl::PackageURL.new(
+      type: "npm",
+      namespace: "@babel",
+      name: "core",
+      version: "7.20.0",
+      qualifiers: { "arch" => "x64" }
+    )
+    
+    # Test version update
+    updated_version = original.with(version: "7.21.0")
+    assert_equal "7.21.0", updated_version.version
+    assert_equal "7.20.0", original.version  # Original unchanged
+    assert_equal original.type, updated_version.type
+    assert_equal original.name, updated_version.name
+    
+    # Test qualifiers update
+    updated_qualifiers = original.with(qualifiers: { "arch" => "arm64", "os" => "linux" })
+    assert_equal({ "arch" => "arm64", "os" => "linux" }, updated_qualifiers.qualifiers)
+    assert_equal({ "arch" => "x64" }, original.qualifiers)  # Original unchanged
+    
+    # Test multiple updates
+    updated_multiple = original.with(
+      version: "8.0.0",
+      qualifiers: { "dev" => "true" },
+      subpath: "lib/index.js"
+    )
+    assert_equal "8.0.0", updated_multiple.version
+    assert_equal({ "dev" => "true" }, updated_multiple.qualifiers)
+    assert_equal "lib/index.js", updated_multiple.subpath
+    
+    # Original should remain completely unchanged
+    assert_equal "pkg:npm/%40babel/core@7.20.0?arch=x64", original.to_s
+  end
+
   def test_registry_url_roundtrip
     # Test that we can go from PURL -> registry URL -> PURL
     original_purl = Purl::PackageURL.new(type: "gem", name: "rails", version: "7.0.0")

@@ -79,6 +79,42 @@ purl = Purl::PackageURL.new(
 puts purl.to_s  # => "pkg:maven/org.apache.commons/commons-lang3@3.12.0"
 ```
 
+### Modifying PURL Objects
+
+PURL objects are immutable by design, but you can create new objects with modified attributes using the `with` method:
+
+```ruby
+# Create original PURL
+original = Purl::PackageURL.new(
+  type: "npm",
+  namespace: "@babel", 
+  name: "core",
+  version: "7.20.0",
+  qualifiers: { "arch" => "x64" }
+)
+
+# Create new PURL with updated version
+updated = original.with(version: "7.21.0")
+puts updated.to_s  # => "pkg:npm/@babel/core@7.21.0?arch=x64"
+
+# Update qualifiers
+with_new_qualifiers = original.with(
+  qualifiers: { "arch" => "arm64", "os" => "linux" }
+)
+puts with_new_qualifiers.to_s  # => "pkg:npm/@babel/core@7.20.0?arch=arm64&os=linux"
+
+# Update multiple attributes at once
+fully_updated = original.with(
+  version: "8.0.0",
+  qualifiers: { "dev" => "true" },
+  subpath: "lib/index.js"
+)
+puts fully_updated.to_s  # => "pkg:npm/@babel/core@8.0.0#lib/index.js?dev=true"
+
+# Original remains unchanged
+puts original.to_s  # => "pkg:npm/@babel/core@7.20.0?arch=x64"
+```
+
 ### Registry URL Generation
 
 ```ruby
@@ -123,11 +159,41 @@ puts all_patterns["npm"]
 # => ["https://www.npmjs.com/package/:namespace/:name", "https://www.npmjs.com/package/:name", ...]
 ```
 
+### Working with Qualifiers
+
+Qualifiers are key-value pairs that provide additional metadata about packages:
+
+```ruby
+# Create PURL with qualifiers
+purl = Purl::PackageURL.new(
+  type: "apk",
+  name: "curl",
+  version: "7.83.0-r0",
+  qualifiers: {
+    "distro" => "alpine-3.16",
+    "arch" => "x86_64",
+    "repository_url" => "https://dl-cdn.alpinelinux.org"
+  }
+)
+puts purl.to_s  # => "pkg:apk/curl@7.83.0-r0?arch=x86_64&distro=alpine-3.16&repository_url=https://dl-cdn.alpinelinux.org"
+
+# Access qualifiers
+puts purl.qualifiers["distro"]  # => "alpine-3.16"
+puts purl.qualifiers["arch"]    # => "x86_64"
+
+# Parse PURL with qualifiers
+parsed = Purl.parse("pkg:rpm/httpd@2.4.53?distro=fedora-36&arch=x86_64")
+puts parsed.qualifiers  # => {"distro" => "fedora-36", "arch" => "x86_64"}
+
+# Add qualifiers to existing PURL
+with_qualifiers = purl.with(qualifiers: purl.qualifiers.merge("signed" => "true"))
+```
+
 ### Package Type Information
 
 ```ruby
 # Get all known PURL types
-puts Purl.known_types.length          # => 32
+puts Purl.known_types.length          # => 37
 puts Purl.known_types.include?("gem") # => true
 
 # Check type support
@@ -218,14 +284,24 @@ Package types and registry patterns are stored in `purl-types.json` for easy con
 {
   "version": "1.0.0",
   "description": "PURL types and registry URL patterns for package ecosystems",
+  "source": "https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst",
+  "last_updated": "2025-07-24",
   "types": {
     "gem": {
       "description": "RubyGems",
-      "registry_support": true,
+      "default_registry": "https://rubygems.org",
       "registry_config": {
         "base_url": "https://rubygems.org/gems",
-        "route_patterns": ["https://rubygems.org/gems/:name"],
-        "reverse_parsing": true
+        "route_patterns": [
+          "https://rubygems.org/gems/:name",
+          "https://rubygems.org/gems/:name/versions/:version"
+        ],
+        "reverse_regex": "^https://rubygems\\.org/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
+        "components": {
+          "namespace": false,
+          "version_in_url": true,
+          "version_path": "/versions/"
+        }
       }
     }
   }

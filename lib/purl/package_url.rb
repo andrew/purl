@@ -210,8 +210,16 @@ module Purl
     end
 
     def deconstruct_keys(keys)
-      to_h.slice(*keys) if keys
+      return to_h.slice(*keys) if keys
       to_h
+    end
+
+    # Create a new PackageURL with modified attributes
+    # Usage: new_purl = purl.with(version: "2.0.0", qualifiers: {"arch" => "x64"})
+    def with(**changes)
+      current_attrs = to_h
+      new_attrs = current_attrs.merge(changes)
+      self.class.new(**new_attrs)
     end
 
     private
