@@ -133,11 +133,17 @@ puts Purl.known_types.include?("gem") # => true
 # Check type support
 puts Purl.known_type?("gem")                    # => true
 puts Purl.registry_supported_types              # => ["cargo", "gem", "maven", "npm", ...]
-puts Purl.reverse_parsing_supported_types       # => ["cargo", "gem", "maven", "npm", ...]
+puts Purl.reverse_parsing_supported_types       # => ["bioconductor", "cargo", "clojars", ...]
+
+# Get default registry for a type
+puts Purl.default_registry("gem")               # => "https://rubygems.org"
+puts Purl.default_registry("npm")               # => "https://registry.npmjs.org"
+puts Purl.default_registry("golang")             # => nil (no default)
 
 # Get detailed type information
 info = Purl.type_info("gem")
 puts info[:known]                     # => true
+puts info[:default_registry]          # => "https://rubygems.org"
 puts info[:registry_url_generation]   # => true
 puts info[:reverse_parsing]           # => true
 puts info[:route_patterns]            # => ["https://rubygems.org/gems/:name", ...]
@@ -191,8 +197,8 @@ The library supports 37 package types (32 official + 5 additional ecosystems):
 - `pypi` (Python) - pypi.org
 - `swift` (Swift) - swiftpackageindex.com
 
-**Reverse Parsing (10 types):**
-- `cargo`, `deno`, `elm`, `gem`, `golang`, `hackage`, `homebrew`, `maven`, `npm`, `pypi`
+**Reverse Parsing (20 types):**
+- `bioconductor`, `cargo`, `clojars`, `cocoapods`, `composer`, `conda`, `cpan`, `deno`, `elm`, `gem`, `golang`, `hackage`, `hex`, `homebrew`, `maven`, `npm`, `nuget`, `pub`, `pypi`, `swift`
 
 **All 37 Supported Types:**
 `alpm`, `apk`, `bioconductor`, `bitbucket`, `bitnami`, `cargo`, `clojars`, `cocoapods`, `composer`, `conan`, `conda`, `cpan`, `cran`, `deb`, `deno`, `docker`, `elm`, `gem`, `generic`, `github`, `golang`, `hackage`, `hex`, `homebrew`, `huggingface`, `luarocks`, `maven`, `mlflow`, `npm`, `nuget`, `oci`, `pub`, `pypi`, `qpkg`, `rpm`, `swid`, `swift`

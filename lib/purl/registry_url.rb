@@ -177,6 +177,67 @@ module Purl
           version = match[3] unless match[3] == "latest"
           { type: type, namespace: namespace, name: name, version: version }
         end
+      when "cocoapods"
+        ->(match) do
+          name = match[1]
+          { type: type, namespace: nil, name: name, version: nil }
+        end
+      when "composer"
+        ->(match) do
+          namespace = match[1]
+          name = match[2]
+          { type: type, namespace: namespace, name: name, version: nil }
+        end
+      when "conda"
+        ->(match) do
+          name = match[1]
+          { type: type, namespace: nil, name: name, version: nil }
+        end
+      when "cpan"
+        ->(match) do
+          name = match[1]
+          { type: type, namespace: nil, name: name, version: nil }
+        end
+      when "hex"
+        ->(match) do
+          name = match[1]
+          { type: type, namespace: nil, name: name, version: nil }
+        end
+      when "nuget"
+        ->(match) do
+          name = match[1]
+          version = match[2] # from /version pattern
+          { type: type, namespace: nil, name: name, version: version }
+        end
+      when "pub"
+        ->(match) do
+          name = match[1]
+          { type: type, namespace: nil, name: name, version: nil }
+        end
+      when "swift"
+        ->(match) do
+          namespace = match[1]
+          name = match[2]
+          { type: type, namespace: namespace, name: name, version: nil }
+        end
+      when "bioconductor"
+        ->(match) do
+          name = match[1]
+          { type: type, namespace: nil, name: name, version: nil }
+        end
+      when "clojars"
+        ->(match) do
+          if match[1] && match[2]
+            # Has namespace: clojars.org/namespace/name
+            namespace = match[1]
+            name = match[2]
+          else
+            # No namespace: clojars.org/name
+            namespace = nil
+            name = match[1] || match[2]
+          end
+          { type: type, namespace: namespace, name: name, version: nil }
+        end
       else
         ->(match) do
           { type: type, namespace: nil, name: match[1], version: nil }

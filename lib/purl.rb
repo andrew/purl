@@ -56,6 +56,7 @@ module Purl
     {
       type: normalized_type,
       known: known_type?(normalized_type),
+      default_registry: default_registry(normalized_type),
       registry_url_generation: RegistryURL.supports?(normalized_type),
       reverse_parsing: RegistryURL.supported_reverse_types.include?(normalized_type),
       route_patterns: RegistryURL.route_patterns_for(normalized_type)
@@ -103,6 +104,14 @@ module Purl
     config["registry_config"]
   end
 
+  # Get default registry URL for a type
+  def self.default_registry(type)
+    config = type_config(type)
+    return nil unless config
+    
+    config["default_registry"]
+  end
+
   # Get metadata about the types configuration
   def self.types_config_metadata
     config = load_types_config
@@ -112,7 +121,8 @@ module Purl
       source: config["source"],
       last_updated: config["last_updated"],
       total_types: config["types"].keys.length,
-      registry_supported_types: config["types"].select { |_, v| v["registry_config"] }.keys.length
+      registry_supported_types: config["types"].select { |_, v| v["registry_config"] }.keys.length,
+      types_with_default_registry: config["types"].select { |_, v| v["default_registry"] }.keys.length
     }
   end
 end

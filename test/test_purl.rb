@@ -206,6 +206,97 @@ class TestPurl < Minitest::Test
     assert_nil purl.version
   end
 
+  def test_from_registry_url_composer
+    registry_url = "https://packagist.org/packages/symfony/console"
+    purl = Purl.from_registry_url(registry_url)
+    
+    assert_equal "composer", purl.type
+    assert_equal "console", purl.name
+    assert_equal "symfony", purl.namespace
+    assert_nil purl.version
+  end
+
+  def test_from_registry_url_swift
+    # Swift packages require a version, so reverse parsing without version will fail validation
+    # This is expected behavior per the PURL spec for Swift
+    registry_url = "https://swiftpackageindex.com/apple/swift-package-manager"
+    
+    assert_raises(Purl::ValidationError) do
+      Purl.from_registry_url(registry_url)
+    end
+  end
+
+  def test_from_registry_url_nuget_with_version
+    registry_url = "https://www.nuget.org/packages/Newtonsoft.Json/13.0.1"
+    purl = Purl.from_registry_url(registry_url)
+    
+    assert_equal "nuget", purl.type
+    assert_equal "Newtonsoft.Json", purl.name
+    assert_nil purl.namespace
+    assert_equal "13.0.1", purl.version
+  end
+
+  def test_from_registry_url_clojars_with_namespace
+    registry_url = "https://clojars.org/org.clojure/clojure"
+    purl = Purl.from_registry_url(registry_url)
+    
+    assert_equal "clojars", purl.type
+    assert_equal "clojure", purl.name
+    assert_equal "org.clojure", purl.namespace
+    assert_nil purl.version
+  end
+
+  def test_from_registry_url_clojars_without_namespace
+    registry_url = "https://clojars.org/ring"
+    purl = Purl.from_registry_url(registry_url)
+    
+    assert_equal "clojars", purl.type
+    assert_equal "ring", purl.name
+    assert_nil purl.namespace
+    assert_nil purl.version
+  end
+
+  def test_from_registry_url_pub
+    registry_url = "https://pub.dev/packages/flutter"
+    purl = Purl.from_registry_url(registry_url)
+    
+    assert_equal "pub", purl.type
+    assert_equal "flutter", purl.name
+    assert_nil purl.namespace
+    assert_nil purl.version
+  end
+
+  def test_from_registry_url_hex
+    registry_url = "https://hex.pm/packages/phoenix"
+    purl = Purl.from_registry_url(registry_url)
+    
+    assert_equal "hex", purl.type
+    assert_equal "phoenix", purl.name
+    assert_nil purl.namespace
+    assert_nil purl.version
+  end
+
+  def test_default_registry
+    # Test types with default registries
+    assert_equal "https://rubygems.org", Purl.default_registry("gem")
+    assert_equal "https://registry.npmjs.org", Purl.default_registry("npm")
+    assert_equal "https://pypi.org", Purl.default_registry("pypi")
+    assert_equal "https://crates.io/", Purl.default_registry("cargo")
+    assert_equal "https://packagist.org", Purl.default_registry("composer")
+    assert_equal "https://hub.docker.com", Purl.default_registry("docker")
+    assert_equal "https://github.com", Purl.default_registry("github")
+    assert_equal "https://bitbucket.org", Purl.default_registry("bitbucket")
+    
+    # Test types without default registries
+    assert_nil Purl.default_registry("golang")
+    assert_nil Purl.default_registry("generic")
+    assert_nil Purl.default_registry("alpm")
+    assert_nil Purl.default_registry("swift")
+    
+    # Test unknown type
+    assert_nil Purl.default_registry("unknown")
+  end
+
   def test_from_registry_url_unsupported
     registry_url = "https://unknown-registry.com/package/test"
     
@@ -324,6 +415,7 @@ class TestPurl < Minitest::Test
     
     assert_equal "gem", gem_info[:type]
     assert gem_info[:known]
+    assert_equal "https://rubygems.org", gem_info[:default_registry]
     assert gem_info[:registry_url_generation]
     assert gem_info[:reverse_parsing]
     assert_instance_of Array, gem_info[:route_patterns]
@@ -332,6 +424,7 @@ class TestPurl < Minitest::Test
     # Test unknown type
     unknown_info = Purl.type_info("unknown")
     refute unknown_info[:known]
+    assert_nil unknown_info[:default_registry]
     refute unknown_info[:registry_url_generation]
     refute unknown_info[:reverse_parsing]
     assert_empty unknown_info[:route_patterns]

@@ -5,19 +5,24 @@
   "last_updated": "2025-07-24",
   "types": {
     "alpm": {
-      "description": "Arch Linux and other users of the libalpm/pacman package manager"
+      "description": "Arch Linux and other users of the libalpm/pacman package manager",
+      "default_registry": null
     },
     "apk": {
-      "description": "APK-based packages"
+      "description": "APK-based packages",
+      "default_registry": null
     },
     "bitbucket": {
-      "description": "Bitbucket-based packages"
+      "description": "Bitbucket-based packages",
+      "default_registry": "https://bitbucket.org"
     },
     "bitnami": {
-      "description": "Bitnami-based packages"
+      "description": "Bitnami-based packages",
+      "default_registry": "https://downloads.bitnami.com/files/stacksmith"
     },
     "cargo": {
       "description": "Rust packages",
+      "default_registry": "https://crates.io/",
       "registry_config": {
         "base_url": "https://crates.io/crates",
         "route_patterns": [
@@ -32,11 +37,13 @@
     },
     "cocoapods": {
       "description": "CocoaPods",
+      "default_registry": "https://cdn.cocoapods.org/",
       "registry_config": {
         "base_url": "https://cocoapods.org/pods",
         "route_patterns": [
           "https://cocoapods.org/pods/:name"
         ],
+        "reverse_regex": "^https://cocoapods\\.org/pods/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -45,11 +52,13 @@
     },
     "composer": {
       "description": "Composer PHP packages",
+      "default_registry": "https://packagist.org",
       "registry_config": {
         "base_url": "https://packagist.org/packages",
         "route_patterns": [
           "https://packagist.org/packages/:namespace/:name"
         ],
+        "reverse_regex": "^https://packagist\\.org/packages/([^/?#]+)/([^/?#]+)",
         "components": {
           "namespace": true,
           "namespace_required": true,
@@ -58,15 +67,18 @@
       }
     },
     "conan": {
-      "description": "Conan C/C++ packages"
+      "description": "Conan C/C++ packages",
+      "default_registry": "https://center.conan.io"
     },
     "conda": {
       "description": "Conda packages",
+      "default_registry": "https://repo.anaconda.com",
       "registry_config": {
         "base_url": "https://anaconda.org/conda-forge",
         "route_patterns": [
           "https://anaconda.org/conda-forge/:name"
         ],
+        "reverse_regex": "^https://anaconda\\.org/conda-forge/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -75,11 +87,13 @@
     },
     "cpan": {
       "description": "CPAN Perl packages",
+      "default_registry": "https://www.cpan.org/",
       "registry_config": {
         "base_url": "https://metacpan.org/dist",
         "route_patterns": [
           "https://metacpan.org/dist/:name"
         ],
+        "reverse_regex": "^https://metacpan\\.org/dist/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -87,16 +101,20 @@
       }
     },
     "cran": {
-      "description": "CRAN R packages"
+      "description": "CRAN R packages",
+      "default_registry": "https://cran.r-project.org"
     },
     "deb": {
-      "description": "Debian, Debian derivatives, and Ubuntu packages"
+      "description": "Debian, Debian derivatives, and Ubuntu packages",
+      "default_registry": null
     },
     "docker": {
-      "description": "Docker images"
+      "description": "Docker images",
+      "default_registry": "https://hub.docker.com"
     },
     "gem": {
       "description": "RubyGems",
+      "default_registry": "https://rubygems.org",
       "registry_config": {
         "base_url": "https://rubygems.org/gems",
         "route_patterns": [
@@ -112,13 +130,16 @@
       }
     },
     "generic": {
-      "description": "Plain packages that do not fit anywhere else"
+      "description": "Plain packages that do not fit anywhere else",
+      "default_registry": null
     },
     "github": {
-      "description": "GitHub-based packages"
+      "description": "GitHub-based packages",
+      "default_registry": "https://github.com"
     },
     "golang": {
       "description": "Go packages",
+      "default_registry": null,
       "registry_config": {
         "base_url": "https://pkg.go.dev",
         "route_patterns": [
@@ -135,6 +156,7 @@
     },
     "hackage": {
       "description": "Haskell packages",
+      "default_registry": "https://hackage.haskell.org",
       "registry_config": {
         "base_url": "https://hackage.haskell.org/package",
         "route_patterns": [
@@ -151,11 +173,13 @@
     },
     "hex": {
       "description": "Hex packages",
+      "default_registry": "https://repo.hex.pm",
       "registry_config": {
         "base_url": "https://hex.pm/packages",
         "route_patterns": [
           "https://hex.pm/packages/:name"
         ],
+        "reverse_regex": "^https://hex\\.pm/packages/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -163,13 +187,16 @@
       }
     },
     "huggingface": {
-      "description": "Hugging Face ML models"
+      "description": "Hugging Face ML models",
+      "default_registry": "https://huggingface.co"
     },
     "luarocks": {
-      "description": "Lua packages installed with LuaRocks"
+      "description": "Lua packages installed with LuaRocks",
+      "default_registry": "https://luarocks.org"
     },
     "maven": {
       "description": "Maven JARs and related artifacts",
+      "default_registry": "https://repo.maven.apache.org/maven2",
       "registry_config": {
         "base_url": "https://mvnrepository.com/artifact",
         "route_patterns": [
@@ -186,10 +213,12 @@
       }
     },
     "mlflow": {
-      "description": "MLflow ML models"
+      "description": "MLflow ML models",
+      "default_registry": null
     },
     "npm": {
       "description": "Node NPM packages",
+      "default_registry": "https://registry.npmjs.org",
       "registry_config": {
         "base_url": "https://www.npmjs.com/package",
         "route_patterns": [
@@ -210,12 +239,14 @@
     },
     "nuget": {
       "description": "NuGet .NET packages",
+      "default_registry": "https://www.nuget.org",
       "registry_config": {
         "base_url": "https://www.nuget.org/packages",
         "route_patterns": [
           "https://www.nuget.org/packages/:name",
           "https://www.nuget.org/packages/:name/:version"
         ],
+        "reverse_regex": "^https://(?:www\\.)?nuget\\.org/packages/([^/?#]+)(?:/([^/?#]+))?",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -224,15 +255,18 @@
       }
     },
     "oci": {
-      "description": "Artifacts stored in registries that conform to OCI Distribution Specification"
+      "description": "Artifacts stored in registries that conform to OCI Distribution Specification",
+      "default_registry": null
     },
     "pub": {
       "description": "Dart and Flutter packages",
+      "default_registry": "https://pub.dartlang.org",
       "registry_config": {
         "base_url": "https://pub.dev/packages",
         "route_patterns": [
           "https://pub.dev/packages/:name"
         ],
+        "reverse_regex": "^https://pub\\.dev/packages/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -241,6 +275,7 @@
     },
     "pypi": {
       "description": "Python packages",
+      "default_registry": "https://pypi.org",
       "registry_config": {
         "base_url": "https://pypi.org/project",
         "route_patterns": [
@@ -257,21 +292,26 @@
       }
     },
     "qpkg": {
-      "description": "QNX packages"
+      "description": "QNX packages",
+      "default_registry": null
     },
     "rpm": {
-      "description": "RPMs"
+      "description": "RPMs",
+      "default_registry": null
     },
     "swid": {
-      "description": "Software Identification (SWID) tags"
+      "description": "Software Identification (SWID) tags",
+      "default_registry": null
     },
     "swift": {
       "description": "Swift packages",
+      "default_registry": null,
       "registry_config": {
         "base_url": "https://swiftpackageindex.com",
         "route_patterns": [
           "https://swiftpackageindex.com/:namespace/:name"
         ],
+        "reverse_regex": "^https://swiftpackageindex\\.com/([^/?#]+)/([^/?#]+)",
         "components": {
           "namespace": true,
           "namespace_required": true,
@@ -281,6 +321,7 @@
     },
     "deno": {
       "description": "Deno packages",
+      "default_registry": null,
       "registry_config": {
         "base_url": "https://deno.land/x",
         "route_patterns": [
@@ -297,6 +338,7 @@
     },
     "homebrew": {
       "description": "Homebrew packages",
+      "default_registry": null,
       "registry_config": {
         "base_url": "https://formulae.brew.sh/formula",
         "route_patterns": [
@@ -311,11 +353,13 @@
     },
     "bioconductor": {
       "description": "Bioconductor packages",
+      "default_registry": null,
       "registry_config": {
         "base_url": "https://bioconductor.org/packages",
         "route_patterns": [
           "https://bioconductor.org/packages/:name"
         ],
+        "reverse_regex": "^https://bioconductor\\.org/packages/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -324,12 +368,14 @@
     },
     "clojars": {
       "description": "Clojars packages",
+      "default_registry": null,
       "registry_config": {
         "base_url": "https://clojars.org",
         "route_patterns": [
           "https://clojars.org/:namespace/:name",
           "https://clojars.org/:name"
         ],
+        "reverse_regex": "^https://clojars\\.org/(?:([^/?#]+)/)?([^/?#]+)",
         "components": {
           "namespace": true,
           "namespace_required": false,
@@ -339,6 +385,7 @@
     },
     "elm": {
       "description": "Elm packages",
+      "default_registry": null,
       "registry_config": {
         "base_url": "https://package.elm-lang.org/packages",
         "route_patterns": [
