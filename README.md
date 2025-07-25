@@ -10,6 +10,10 @@ This library features comprehensive error handling with namespaced error types, 
 
 **[Available on RubyGems](https://rubygems.org/gems/purl)** | **[API Documentation](https://rdoc.info/github/andrew/purl)**
 
+## Related Libraries
+
+- **[Vers](https://github.com/andrew/vers)** - A Ruby library for working with version ranges that supports the VERS specification
+
 ## Features
 
 - **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
