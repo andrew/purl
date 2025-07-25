@@ -581,7 +581,12 @@ class TestPurl < Minitest::Test
 
   def test_json_schema_validation
     require "json"
-    require "json-schema"
+    
+    begin
+      require "json-schema"
+    rescue LoadError => e
+      skip "json-schema gem not available: #{e.message}"
+    end
     
     project_root = File.dirname(__dir__)
     schemas_dir = File.join(project_root, "schemas")

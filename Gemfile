@@ -10,3 +10,4 @@ gem "rake", "~> 13.0"
 
 gem "minitest", "~> 5.16"
 gem "json-schema", "~> 4.0"
+gem "bigdecimal"

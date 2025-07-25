@@ -396,7 +396,14 @@ namespace :spec do
   desc "Validate JSON files against their schemas"
   task :validate_schemas do
     require "json"
-    require "json-schema"
+    
+    begin
+      require "json-schema"
+    rescue LoadError => e
+      puts "❌ json-schema gem not available: #{e.message}"
+      puts "   Install with: gem install json-schema"
+      exit 1
+    end
     
     puts "🔍 Validating JSON files against schemas..."
     puts "=" * 50
