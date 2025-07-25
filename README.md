@@ -1,10 +1,10 @@
 # Purl - Package URL Parser for Ruby
 
-A comprehensive Ruby library for parsing, validating, and working with Package URLs (PURLs) as defined by the [PURL specification](https://github.com/package-url/purl-spec).
+A Ruby library for parsing, validating, and generating Package URLs (PURLs) as defined by the [PURL specification](https://github.com/package-url/purl-spec).
 
-This library provides better error handling than existing solutions with namespaced error types, bidirectional registry URL conversion, and JSON-based configuration for cross-language compatibility.
+This library features comprehensive error handling with namespaced error types, bidirectional registry URL conversion, and JSON-based configuration for cross-language compatibility.
 
-[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%202.7-red.svg)](https://www.ruby-lang.org/)
+[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.1-red.svg)](https://www.ruby-lang.org/)
 [![Gem Version](https://badge.fury.io/rb/purl.svg)](https://rubygems.org/gems/purl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
