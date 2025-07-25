@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2025-07-25
+
+### Added
+- Comprehensive benchmarking rake tasks for performance analysis
+  - `rake benchmark:parse` - PURL parsing performance benchmarks
+  - `rake benchmark:types` - Package type parsing comparison
+  - `rake benchmark:registry` - Registry URL generation benchmarks
+  - `rake benchmark:all` - Run all benchmarks
+
+### Improved
+- **26% improvement in parsing throughput** (~175K PURLs/second)
+- **8% improvement in string conversion performance** (~315K conversions/second)
+- **7% improvement in object creation** (~280K objects/second)
+- Optimized string operations in parse method with conditional regex application
+- Reduced string allocations in `to_s` method using array joining
+- Cached compiled regexes with `.freeze` for better performance
+- Lower memory allocation pressure in high-throughput scenarios
+
 ## [1.1.1] - 2025-07-25
 
 ### Added
