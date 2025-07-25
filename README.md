@@ -146,6 +146,30 @@ purl = Purl.from_registry_url("https://pypi.org/project/django/4.0.0/")
 puts purl.to_s  # => "pkg:pypi/django@4.0.0"
 ```
 
+### Custom Registry Domains
+
+You can parse registry URLs from custom domains or generate URLs for private registries:
+
+```ruby
+# Parse from custom domain (specify type to help with parsing)
+purl = Purl.from_registry_url("https://npm.company.com/package/@babel/core", type: "npm")
+puts purl.to_s  # => "pkg:npm/@babel/core"
+
+# Generate URLs for custom registries
+purl = Purl.parse("pkg:gem/rails@7.0.0")
+custom_url = purl.registry_url(base_url: "https://gems.internal.com/gems")
+puts custom_url  # => "https://gems.internal.com/gems/rails"
+
+# With version-specific URLs
+with_version = purl.registry_url_with_version(base_url: "https://gems.internal.com/gems")
+puts with_version  # => "https://gems.internal.com/gems/rails/versions/7.0.0"
+
+# Works with all supported package types
+composer_purl = Purl.parse("pkg:composer/symfony/console@5.4.0")
+private_composer = composer_purl.registry_url(base_url: "https://packagist.company.com/packages")
+puts private_composer  # => "https://packagist.company.com/packages/symfony/console"
+```
+
 ### Route Patterns
 
 ```ruby
@@ -291,12 +315,9 @@ Package types and registry patterns are stored in `purl-types.json` for easy con
       "description": "RubyGems",
       "default_registry": "https://rubygems.org",
       "registry_config": {
-        "base_url": "https://rubygems.org/gems",
-        "route_patterns": [
-          "https://rubygems.org/gems/:name",
-          "https://rubygems.org/gems/:name/versions/:version"
-        ],
-        "reverse_regex": "^https://rubygems\\.org/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
+        "path_template": "/gems/:name",
+        "version_path_template": "/gems/:name/versions/:version",
+        "reverse_regex": "/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -307,6 +328,12 @@ Package types and registry patterns are stored in `purl-types.json` for easy con
   }
 }
 ```
+
+**Key Configuration Improvements:**
+- **Domain-agnostic patterns**: `path_template` without hardcoded domains enables custom registries
+- **Flexible URL generation**: Combine `default_registry` + `path_template` for any domain
+- **Cleaner JSON**: Reduced duplication and easier maintenance
+- **Cross-registry compatibility**: Same URL structure works with public and private registries
 
 ## Development
 

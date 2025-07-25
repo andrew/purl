@@ -24,29 +24,69 @@ module Purl
     end
 
     def self.build_pattern_config(type, config)
+      # Get the default registry for this type from parent config
+      type_config = load_types_config["types"][type]
+      default_registry = type_config["default_registry"]
+      
+      # Build full URLs from templates if we have a default registry
+      route_patterns = []
+      if default_registry && config["path_template"]
+        route_patterns << default_registry + config["path_template"]
+        if config["version_path_template"]
+          route_patterns << default_registry + config["version_path_template"]
+        end
+      end
+      # Fall back to legacy route_patterns if available
+      route_patterns = config["route_patterns"] if route_patterns.empty? && config["route_patterns"]
+      
+      # Build reverse regex from template or use legacy format
+      reverse_regex = nil
+      if config["reverse_regex"]
+        if config["reverse_regex"].start_with?("/") && default_registry
+          # Domain-agnostic pattern - combine with default registry domain
+          domain_pattern = default_registry.sub(/^https?:\/\//, '').gsub('.', '\\.')
+          reverse_regex = Regexp.new("^https?://#{domain_pattern}" + config["reverse_regex"])
+        else
+          # Legacy full pattern
+          reverse_regex = Regexp.new(config["reverse_regex"])
+        end
+      end
+      
       {
-        base_url: config["base_url"],
-        route_patterns: config["route_patterns"] || [],
-        reverse_regex: config["reverse_regex"] ? Regexp.new(config["reverse_regex"]) : nil,
-        pattern: build_generation_lambda(type, config),
-        reverse_parser: config["reverse_regex"] ? build_reverse_parser(type, config) : nil
+        base_url: config["base_url"] || (default_registry ? default_registry + config["path_template"]&.split('/:').first : nil),
+        route_patterns: route_patterns,
+        reverse_regex: reverse_regex,
+        pattern: build_generation_lambda(type, config, default_registry),
+        reverse_parser: reverse_regex ? build_reverse_parser(type, config) : nil
       }
     end
 
-    def self.build_generation_lambda(type, config)
+    # Load types config (needed for accessing default_registry)
+    def self.load_types_config
+      @types_config ||= begin
+        config_path = File.join(__dir__, "..", "..", "purl-types.json")
+        require "json"
+        JSON.parse(File.read(config_path))
+      end
+    end
+
+    def self.build_generation_lambda(type, config, default_registry = nil)
+      # Use base_url from config, or build from default_registry + path_template
+      base_url = config["base_url"] || (default_registry ? default_registry + config["path_template"]&.split('/:').first : nil)
+      return nil unless base_url
       case type
       when "npm"
         ->(purl) do
           if purl.namespace
-            "#{config["base_url"]}/#{purl.namespace}/#{purl.name}"
+            "#{base_url}/#{purl.namespace}/#{purl.name}"
           else
-            "#{config["base_url"]}/#{purl.name}"
+            "#{base_url}/#{purl.name}"
           end
         end
       when "composer", "maven", "swift"
         ->(purl) do
           if purl.namespace
-            "#{config["base_url"]}/#{purl.namespace}/#{purl.name}"
+            "#{base_url}/#{purl.namespace}/#{purl.name}"
           else
             raise MissingRegistryInfoError.new(
               "#{type.capitalize} packages require a namespace",
@@ -58,42 +98,42 @@ module Purl
       when "golang"
         ->(purl) do
           if purl.namespace
-            "#{config["base_url"]}/#{purl.namespace}/#{purl.name}"
+            "#{base_url}/#{purl.namespace}/#{purl.name}"
           else
-            "#{config["base_url"]}/#{purl.name}"
+            "#{base_url}/#{purl.name}"
           end
         end
       when "pypi"
-        ->(purl) { "#{config["base_url"]}/#{purl.name}/" }
+        ->(purl) { "#{base_url}/#{purl.name}/" }
       when "hackage"
         ->(purl) do
           if purl.version
-            "#{config["base_url"]}/#{purl.name}-#{purl.version}"
+            "#{base_url}/#{purl.name}-#{purl.version}"
           else
-            "#{config["base_url"]}/#{purl.name}"
+            "#{base_url}/#{purl.name}"
           end
         end
       when "deno"
         ->(purl) do
           if purl.version
-            "#{config["base_url"]}/#{purl.name}@#{purl.version}"
+            "#{base_url}/#{purl.name}@#{purl.version}"
           else
-            "#{config["base_url"]}/#{purl.name}"
+            "#{base_url}/#{purl.name}"
           end
         end
       when "clojars"
         ->(purl) do
           if purl.namespace
-            "#{config["base_url"]}/#{purl.namespace}/#{purl.name}"
+            "#{base_url}/#{purl.namespace}/#{purl.name}"
           else
-            "#{config["base_url"]}/#{purl.name}"
+            "#{base_url}/#{purl.name}"
           end
         end
       when "elm"
         ->(purl) do
           if purl.namespace
             version = purl.version || "latest"
-            "#{config["base_url"]}/#{purl.namespace}/#{purl.name}/#{version}"
+            "#{base_url}/#{purl.namespace}/#{purl.name}/#{version}"
           else
             raise MissingRegistryInfoError.new(
               "Elm packages require a namespace",
@@ -103,7 +143,7 @@ module Purl
           end
         end
       else
-        ->(purl) { "#{config["base_url"]}/#{purl.name}" }
+        ->(purl) { "#{base_url}/#{purl.name}" }
       end
     end
 
@@ -248,8 +288,8 @@ module Purl
     # Registry patterns loaded from JSON configuration
     REGISTRY_PATTERNS = load_registry_patterns.freeze
 
-    def self.generate(purl)
-      new(purl).generate
+    def self.generate(purl, base_url: nil)
+      new(purl).generate(base_url: base_url)
     end
 
     def self.supported_types
@@ -260,9 +300,49 @@ module Purl
       REGISTRY_PATTERNS.key?(type.to_s.downcase)
     end
 
-    def self.from_url(registry_url)
-      # Try to parse the registry URL back into a PURL
-      REGISTRY_PATTERNS.each do |type, config|
+    def self.from_url(registry_url, type: nil)
+      # If type is specified, try that specific type first with domain-agnostic parsing
+      if type
+        normalized_type = type.to_s.downcase
+        config = REGISTRY_PATTERNS[normalized_type]
+        
+        if config && config[:reverse_regex] && config[:reverse_parser]
+          # Create a domain-agnostic version of the regex by replacing the base domain
+          original_regex = config[:reverse_regex].source
+          
+          # For simplified JSON patterns that start with /, create domain-agnostic regex
+          domain_agnostic_regex = nil
+          if original_regex.start_with?("/")
+            # Domain-agnostic pattern - match any domain with this path
+            domain_agnostic_regex = Regexp.new("^https?://[^/]+" + original_regex)
+          else
+            # Legacy full regex pattern
+            if original_regex =~ /\^https?:\/\/[^\/]+(.+)$/
+              path_pattern = $1
+              # Create domain-agnostic regex that matches any domain with the same path structure
+              domain_agnostic_regex = Regexp.new("^https?://[^/]+" + path_pattern)
+            end
+          end
+            
+          if domain_agnostic_regex
+            match = registry_url.match(domain_agnostic_regex)
+            if match
+              parsed_data = config[:reverse_parser].call(match)
+              return PackageURL.new(
+                type: parsed_data[:type],
+                namespace: parsed_data[:namespace],
+                name: parsed_data[:name],
+                version: parsed_data[:version]
+              )
+            end
+          end
+        end
+        
+        # If specified type didn't work, fall through to normal domain-matching logic
+      end
+      
+      # Try to parse the registry URL back into a PURL using domain matching
+      REGISTRY_PATTERNS.each do |registry_type, config|
         next unless config[:reverse_regex] && config[:reverse_parser]
         
         match = registry_url.match(config[:reverse_regex])
@@ -277,8 +357,15 @@ module Purl
         end
       end
       
+      error_message = if type
+        "Unable to parse registry URL: #{registry_url} as type '#{type}'. " +
+        "URL structure doesn't match expected pattern for this type."
+      else
+        "Unable to parse registry URL: #{registry_url}. No matching pattern found."
+      end
+      
       raise UnsupportedTypeError.new(
-        "Unable to parse registry URL: #{registry_url}. No matching pattern found.",
+        error_message,
         supported_types: REGISTRY_PATTERNS.keys.select { |k| REGISTRY_PATTERNS[k][:reverse_regex] }
       )
     end
@@ -308,7 +395,7 @@ module Purl
       @purl = purl
     end
 
-    def generate
+    def generate(base_url: nil)
       pattern_config = REGISTRY_PATTERNS[@purl.type.downcase]
       
       unless pattern_config
@@ -320,7 +407,13 @@ module Purl
       end
 
       begin
-        pattern_config[:pattern].call(@purl)
+        if base_url
+          # Use custom base URL with the same URL structure
+          generate_with_custom_base_url(base_url, pattern_config)
+        else
+          # Use default base URL
+          pattern_config[:pattern].call(@purl)
+        end
       rescue MissingRegistryInfoError
         raise
       rescue => e
@@ -328,23 +421,87 @@ module Purl
       end
     end
 
-    def generate_with_version
-      base_url = generate
+    def generate_with_version(base_url: nil)
+      registry_url = generate(base_url: base_url)
       
       case @purl.type.downcase
       when "npm"
-        @purl.version ? "#{base_url}/v/#{@purl.version}" : base_url
+        @purl.version ? "#{registry_url}/v/#{@purl.version}" : registry_url
       when "pypi"
-        @purl.version ? "#{base_url}#{@purl.version}/" : base_url
+        @purl.version ? "#{registry_url}#{@purl.version}/" : registry_url
       when "gem"
-        @purl.version ? "#{base_url}/versions/#{@purl.version}" : base_url
+        @purl.version ? "#{registry_url}/versions/#{@purl.version}" : registry_url
       when "maven"
-        @purl.version ? "#{base_url}/#{@purl.version}" : base_url
+        @purl.version ? "#{registry_url}/#{@purl.version}" : registry_url
       when "nuget"
-        @purl.version ? "#{base_url}/#{@purl.version}" : base_url
+        @purl.version ? "#{registry_url}/#{@purl.version}" : registry_url
       else
         # For other types, just return the base URL since version-specific URLs vary
-        base_url
+        registry_url
+      end
+    end
+
+    private
+
+    def generate_with_custom_base_url(custom_base_url, pattern_config)
+      
+      # Replace the base URL in the pattern lambda
+      case @purl.type.downcase
+      when "npm"
+        if @purl.namespace
+          "#{custom_base_url}/#{@purl.namespace}/#{@purl.name}"
+        else
+          "#{custom_base_url}/#{@purl.name}"
+        end
+      when "composer", "maven", "swift"
+        if @purl.namespace
+          "#{custom_base_url}/#{@purl.namespace}/#{@purl.name}"
+        else
+          raise MissingRegistryInfoError.new(
+            "#{@purl.type.capitalize} packages require a namespace",
+            type: @purl.type,
+            missing: "namespace"
+          )
+        end
+      when "golang"
+        if @purl.namespace
+          "#{custom_base_url}/#{@purl.namespace}/#{@purl.name}"
+        else
+          "#{custom_base_url}/#{@purl.name}"
+        end
+      when "pypi"
+        "#{custom_base_url}/#{@purl.name}/"
+      when "hackage"
+        if @purl.version
+          "#{custom_base_url}/#{@purl.name}-#{@purl.version}"
+        else
+          "#{custom_base_url}/#{@purl.name}"
+        end
+      when "deno"
+        if @purl.version
+          "#{custom_base_url}/#{@purl.name}@#{@purl.version}"
+        else
+          "#{custom_base_url}/#{@purl.name}"
+        end
+      when "clojars"
+        if @purl.namespace
+          "#{custom_base_url}/#{@purl.namespace}/#{@purl.name}"
+        else
+          "#{custom_base_url}/#{@purl.name}"
+        end
+      when "elm"
+        if @purl.namespace
+          version = @purl.version || "latest"
+          "#{custom_base_url}/#{@purl.namespace}/#{@purl.name}/#{version}"
+        else
+          raise MissingRegistryInfoError.new(
+            "Elm packages require a namespace",
+            type: @purl.type,
+            missing: "namespace"
+          )
+        end
+      else
+        "#{custom_base_url}/#{@purl.name}"
       end
     end
 
@@ -355,12 +512,12 @@ module Purl
 
   # Add registry URL generation methods to PackageURL
   class PackageURL
-    def registry_url
-      RegistryURL.generate(self)
+    def registry_url(base_url: nil)
+      RegistryURL.generate(self, base_url: base_url)
     end
 
-    def registry_url_with_version
-      RegistryURL.new(self).generate_with_version
+    def registry_url_with_version(base_url: nil)
+      RegistryURL.new(self).generate_with_version(base_url: base_url)
     end
 
     def supports_registry_url?

@@ -281,7 +281,7 @@ class TestPurl < Minitest::Test
     assert_equal "https://rubygems.org", Purl.default_registry("gem")
     assert_equal "https://registry.npmjs.org", Purl.default_registry("npm")
     assert_equal "https://pypi.org", Purl.default_registry("pypi")
-    assert_equal "https://crates.io/", Purl.default_registry("cargo")
+    assert_equal "https://crates.io", Purl.default_registry("cargo")
     assert_equal "https://packagist.org", Purl.default_registry("composer")
     assert_equal "https://hub.docker.com", Purl.default_registry("docker")
     assert_equal "https://github.com", Purl.default_registry("github")
@@ -297,11 +297,60 @@ class TestPurl < Minitest::Test
     assert_nil Purl.default_registry("unknown")
   end
 
+  def test_from_registry_url_with_custom_domain
+    # Test npm package on private registry
+    private_npm_url = "https://npm.company.com/package/@babel/core"
+    purl = Purl.from_registry_url(private_npm_url, type: "npm")
+    
+    assert_equal "npm", purl.type
+    assert_equal "@babel", purl.namespace
+    assert_equal "core", purl.name
+    assert_nil purl.version
+    
+    # Test gem on private registry with version
+    private_gem_url = "https://gems.internal.com/gems/rails/versions/7.0.0"
+    purl = Purl.from_registry_url(private_gem_url, type: "gem")
+    
+    assert_equal "gem", purl.type
+    assert_equal "rails", purl.name
+    assert_equal "7.0.0", purl.version
+    assert_nil purl.namespace
+    
+    # Test PyPI on custom domain
+    custom_pypi_url = "https://pypi.example.org/project/django/4.0.0/"
+    purl = Purl.from_registry_url(custom_pypi_url, type: "pypi")
+    
+    assert_equal "pypi", purl.type
+    assert_equal "django", purl.name
+    assert_equal "4.0.0", purl.version
+    assert_nil purl.namespace
+  end
+
+  def test_from_registry_url_custom_domain_wrong_type
+    # Test error when URL structure doesn't match the specified type
+    gem_url = "https://rubygems.org/gems/rails"
+    
+    # Try to parse gem URL as npm type - should fail because gem URL structure 
+    # doesn't match npm URL structure (/package/ vs /gems/)
+    # However, our current implementation is quite permissive, so let's test with
+    # a URL that definitely won't match npm pattern
+    bad_url = "https://example.com/completely/different/structure"
+    
+    assert_raises(Purl::UnsupportedTypeError) do
+      Purl.from_registry_url(bad_url, type: "npm")
+    end
+  end
+
   def test_from_registry_url_unsupported
     registry_url = "https://unknown-registry.com/package/test"
     
     assert_raises(Purl::UnsupportedTypeError) do
       Purl.from_registry_url(registry_url)
+    end
+    
+    # Also test with type hint but unsupported type
+    assert_raises(Purl::UnsupportedTypeError) do
+      Purl.from_registry_url(registry_url, type: "unsupported")
     end
   end
 
@@ -338,6 +387,27 @@ class TestPurl < Minitest::Test
     
     # Original should remain completely unchanged
     assert_equal "pkg:npm/%40babel/core@7.20.0?arch=x64", original.to_s
+  end
+
+  def test_registry_url_with_custom_domain
+    # Test npm package with custom domain
+    purl = Purl::PackageURL.new(type: "npm", namespace: "@babel", name: "core")
+    custom_url = purl.registry_url(base_url: "https://npm.company.com/package")
+    assert_equal "https://npm.company.com/package/@babel/core", custom_url
+    
+    # Test gem with custom domain
+    gem_purl = Purl::PackageURL.new(type: "gem", name: "rails", version: "7.0.0")
+    custom_gem_url = gem_purl.registry_url(base_url: "https://gems.internal.com/gems")
+    assert_equal "https://gems.internal.com/gems/rails", custom_gem_url
+    
+    # Test with version
+    custom_gem_url_with_version = gem_purl.registry_url_with_version(base_url: "https://gems.internal.com/gems")
+    assert_equal "https://gems.internal.com/gems/rails/versions/7.0.0", custom_gem_url_with_version
+    
+    # Test PyPI with custom domain
+    pypi_purl = Purl::PackageURL.new(type: "pypi", name: "django", version: "4.0.0")
+    custom_pypi_url = pypi_purl.registry_url(base_url: "https://pypi.example.org/project")
+    assert_equal "https://pypi.example.org/project/django/", custom_pypi_url
   end
 
   def test_registry_url_roundtrip

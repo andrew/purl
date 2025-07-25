@@ -22,13 +22,10 @@
     },
     "cargo": {
       "description": "Rust packages",
-      "default_registry": "https://crates.io/",
+      "default_registry": "https://crates.io",
       "registry_config": {
-        "base_url": "https://crates.io/crates",
-        "route_patterns": [
-          "https://crates.io/crates/:name"
-        ],
-        "reverse_regex": "^https://crates\\.io/crates/([^/?#]+)",
+        "path_template": "/crates/:name",
+        "reverse_regex": "/crates/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -116,12 +113,9 @@
       "description": "RubyGems",
       "default_registry": "https://rubygems.org",
       "registry_config": {
-        "base_url": "https://rubygems.org/gems",
-        "route_patterns": [
-          "https://rubygems.org/gems/:name",
-          "https://rubygems.org/gems/:name/versions/:version"
-        ],
-        "reverse_regex": "^https://rubygems\\.org/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
+        "path_template": "/gems/:name",
+        "version_path_template": "/gems/:name/versions/:version",
+        "reverse_regex": "/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
         "components": {
           "namespace": false,
           "version_in_url": true,

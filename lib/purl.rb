@@ -26,8 +26,10 @@ module Purl
   end
 
   # Convenience method for parsing registry URLs back to PURLs
-  def self.from_registry_url(registry_url)
-    RegistryURL.from_url(registry_url)
+  # @param registry_url [String] The registry URL to parse
+  # @param type [String, Symbol, nil] Optional type hint for custom domains
+  def self.from_registry_url(registry_url, type: nil)
+    RegistryURL.from_url(registry_url, type: type)
   end
 
   # Returns all known PURL types
