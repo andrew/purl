@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-07-25
+
+### Added
+- Comprehensive RDoc documentation for all classes and methods
+- RDoc task in Rakefile with proper configuration
+- API documentation link in README
+
+### Fixed
+- Add bigdecimal gem dependency to resolve potential loading issues
+- Improve JSON schema loading error handling
+
+## [1.1.0] - 2025-07-25
+
+### Added
+- JSON schema validation for configuration files (`purl-types.json` and `test-suite-data.json`)
+- New rake tasks: `spec:validate_schemas` and `spec:validate_examples`
+- Examples for all package types in configuration
+- Default registry URLs for package types
+- Enhanced reverse parsing support for additional package types
+- `with` method for creating modified PURL objects (immutable pattern)
+- FUNDING.yml for project sponsorship support
+
+### Enhanced
+- Improved README documentation with custom registry examples
+- Enhanced test coverage for new functionality
+- Better compliance test output formatting
+- Comprehensive package type examples and validation
+
+### Documentation
+- Updated documentation to remove emoji and enhance readability
+- Added comprehensive examples for custom registry usage
+- Enhanced API documentation throughout
+
 ## [1.0.0] - 2025-01-24
 
 ### Added
