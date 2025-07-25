@@ -3,12 +3,74 @@
 require "uri"
 
 module Purl
+  # Represents a Package URL (PURL) - a mostly universal standard to reference 
+  # a software package in a uniform way across many tools, programming languages
+  # and ecosystems.
+  #
+  # A PURL has the following components:
+  # - +type+: the package type (e.g., "gem", "npm", "maven")
+  # - +namespace+: optional namespace/scope (e.g., "@babel" for npm)
+  # - +name+: the package name (required)
+  # - +version+: optional version
+  # - +qualifiers+: optional key-value pairs
+  # - +subpath+: optional path within the package
+  #
+  # @example Creating a PackageURL
+  #   purl = PackageURL.new(
+  #     type: "gem",
+  #     name: "rails", 
+  #     version: "7.0.0"
+  #   )
+  #   puts purl.to_s  # "pkg:gem/rails@7.0.0"
+  #
+  # @example Parsing a PURL string
+  #   purl = PackageURL.parse("pkg:npm/@babel/core@7.0.0")
+  #   puts purl.namespace  # "@babel"
+  #   puts purl.name       # "core"
+  #
+  # @see https://github.com/package-url/purl-spec PURL Specification
   class PackageURL
-    attr_reader :type, :namespace, :name, :version, :qualifiers, :subpath
+    # @return [String] the package type (e.g., "gem", "npm", "maven")
+    attr_reader :type
+    
+    # @return [String, nil] the package namespace/scope
+    attr_reader :namespace
+    
+    # @return [String] the package name
+    attr_reader :name
+    
+    # @return [String, nil] the package version
+    attr_reader :version
+    
+    # @return [Hash<String, String>, nil] key-value qualifier pairs
+    attr_reader :qualifiers
+    
+    # @return [String, nil] subpath within the package
+    attr_reader :subpath
 
     VALID_TYPE_CHARS = /\A[a-zA-Z0-9\.\+\-]+\z/
     VALID_QUALIFIER_KEY_CHARS = /\A[a-zA-Z0-9\.\-_]+\z/
 
+    # Create a new PackageURL instance
+    #
+    # @param type [String, Symbol] the package type (required)
+    # @param name [String] the package name (required)
+    # @param namespace [String, nil] optional namespace/scope
+    # @param version [String, nil] optional version
+    # @param qualifiers [Hash, nil] optional key-value qualifier pairs
+    # @param subpath [String, nil] optional subpath within package
+    #
+    # @raise [InvalidTypeError] if type is invalid
+    # @raise [InvalidNameError] if name is invalid
+    # @raise [ValidationError] if any component fails type-specific validation
+    #
+    # @example
+    #   purl = PackageURL.new(
+    #     type: "npm",
+    #     namespace: "@babel",
+    #     name: "core",
+    #     version: "7.0.0"
+    #   )
     def initialize(type:, name:, namespace: nil, version: nil, qualifiers: nil, subpath: nil)
       @type = validate_and_normalize_type(type)
       @name = validate_name(name)
@@ -21,6 +83,25 @@ module Purl
       validate_type_specific_rules
     end
 
+    # Parse a PURL string into a PackageURL object
+    #
+    # @param purl_string [String] PURL string starting with "pkg:"
+    # @return [PackageURL] parsed package URL object
+    # @raise [InvalidSchemeError] if string doesn't start with "pkg:"
+    # @raise [MalformedUrlError] if string is malformed
+    # @raise [ValidationError] if parsed components fail validation
+    #
+    # @example Basic parsing
+    #   purl = PackageURL.parse("pkg:gem/rails@7.0.0")
+    #   puts purl.type     # "gem"
+    #   puts purl.name     # "rails"
+    #   puts purl.version  # "7.0.0"
+    #
+    # @example Complex parsing with all components
+    #   purl = PackageURL.parse("pkg:npm/@babel/core@7.0.0?arch=x64#lib/index.js")
+    #   puts purl.namespace   # "@babel"
+    #   puts purl.qualifiers  # {"arch" => "x64"}
+    #   puts purl.subpath     # "lib/index.js"
     def self.parse(purl_string)
       raise InvalidSchemeError, "PURL must start with 'pkg:'" unless purl_string.start_with?("pkg:")
 
@@ -134,6 +215,13 @@ module Purl
       )
     end
 
+    # Convert the PackageURL to its canonical string representation
+    #
+    # @return [String] canonical PURL string
+    #
+    # @example
+    #   purl = PackageURL.new(type: "gem", name: "rails", version: "7.0.0")
+    #   puts purl.to_s  # "pkg:gem/rails@7.0.0"
     def to_s
       result = "pkg:#{type.downcase}"
       
@@ -183,6 +271,15 @@ module Purl
       result
     end
 
+    # Convert the PackageURL to a hash representation
+    #
+    # @return [Hash<Symbol, Object>] hash with component keys and values
+    #
+    # @example
+    #   purl = PackageURL.new(type: "gem", name: "rails", version: "7.0.0")
+    #   hash = purl.to_h
+    #   # => {:type=>"gem", :namespace=>nil, :name=>"rails", :version=>"7.0.0", 
+    #   #     :qualifiers=>nil, :subpath=>nil}
     def to_h
       {
         type: type,
@@ -194,28 +291,69 @@ module Purl
       }
     end
 
+    # Compare two PackageURL objects for equality
+    #
+    # Two PURLs are equal if their canonical string representations are identical.
+    #
+    # @param other [Object] object to compare with
+    # @return [Boolean] true if equal, false otherwise
+    #
+    # @example
+    #   purl1 = PackageURL.parse("pkg:gem/rails@7.0.0")
+    #   purl2 = PackageURL.parse("pkg:gem/rails@7.0.0")
+    #   puts purl1 == purl2  # true
     def ==(other)
       return false unless other.is_a?(PackageURL)
       
       to_s == other.to_s
     end
 
+    # Generate hash code for the PackageURL
+    #
+    # @return [Integer] hash code based on canonical string representation
     def hash
       to_s.hash
     end
 
     # Pattern matching support for Ruby 2.7+
+    #
+    # Allows destructuring PackageURL in pattern matching.
+    #
+    # @return [Array] array of [type, namespace, name, version, qualifiers, subpath]
+    #
+    # @example Ruby 2.7+ pattern matching
+    #   case purl
+    #   in ["gem", nil, name, version, nil, nil]
+    #     puts "Simple gem: #{name} v#{version}"
+    #   end
     def deconstruct
       [type, namespace, name, version, qualifiers, subpath]
     end
 
+    # Pattern matching support for Ruby 2.7+ (hash patterns)
+    #
+    # @param keys [Array<Symbol>, nil] keys to extract, or nil for all keys
+    # @return [Hash<Symbol, Object>] hash with requested keys
+    #
+    # @example Ruby 2.7+ hash pattern matching
+    #   case purl
+    #   in {type: "gem", name:, version:}
+    #     puts "Gem #{name} version #{version}"
+    #   end
     def deconstruct_keys(keys)
       return to_h.slice(*keys) if keys
       to_h
     end
 
     # Create a new PackageURL with modified attributes
-    # Usage: new_purl = purl.with(version: "2.0.0", qualifiers: {"arch" => "x64"})
+    #
+    # @param changes [Hash] attributes to change
+    # @return [PackageURL] new PackageURL instance with changes applied
+    #
+    # @example
+    #   purl = PackageURL.parse("pkg:gem/rails@7.0.0")
+    #   new_purl = purl.with(version: "7.1.0", qualifiers: {"arch" => "x64"})
+    #   puts new_purl.to_s  # "pkg:gem/rails@7.1.0?arch=x64"
     def with(**changes)
       current_attrs = to_h
       new_attrs = current_attrs.merge(changes)

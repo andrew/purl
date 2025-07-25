@@ -8,7 +8,7 @@ This library features comprehensive error handling with namespaced error types, 
 [![Gem Version](https://badge.fury.io/rb/purl.svg)](https://rubygems.org/gems/purl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**[Available on RubyGems](https://rubygems.org/gems/purl)**
+**[Available on RubyGems](https://rubygems.org/gems/purl)** | **[API Documentation](https://rdoc.info/github/andrew/purl)**
 
 ## Features
 

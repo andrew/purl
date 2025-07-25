@@ -2,8 +2,19 @@
 
 require "bundler/gem_tasks"
 require "minitest/test_task"
+require "rdoc/task"
 
 Minitest::TestTask.create
+
+RDoc::Task.new do |rdoc|
+  rdoc.rdoc_dir = "doc"
+  rdoc.title = "PURL - Package URL Library"
+  rdoc.main = "README.md"
+  rdoc.rdoc_files.include("README.md", "lib/**/*.rb")
+  rdoc.options << "--line-numbers"
+  rdoc.options << "--all"
+  rdoc.options << "--charset=UTF-8"
+end
 
 task default: :test
 
