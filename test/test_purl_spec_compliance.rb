@@ -80,16 +80,9 @@ class TestPurlSpecCompliance < Minitest::Test
       end
     end
 
-    puts "\n=== PURL Spec Compliance Test Results ==="
-    puts "Total test cases: #{@test_data.length}"
-    puts "Passed: #{passed}"
-    puts "Failed: #{failed}"
-    puts "Success rate: #{(passed.to_f / @test_data.length * 100).round(1)}%"
-    
-    if failed > 0
+    if failed > 0 && ENV["VERBOSE"]
       puts "\n=== Failed Cases ==="
       errors.each { |error| puts error }
-      puts "\nTo see all errors, run with VERBOSE=1"
     end
 
     # We have achieved high compliance with the PURL specification
