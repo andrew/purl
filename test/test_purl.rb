@@ -578,4 +578,26 @@ class TestPurl < Minitest::Test
     assert gem_info[:registry_url_generation]
     assert gem_info[:reverse_parsing]
   end
+
+  def test_json_schema_validation
+    require "json"
+    require "json-schema"
+    
+    project_root = File.dirname(__dir__)
+    schemas_dir = File.join(project_root, "schemas")
+    
+    # Test purl-types.json against its schema
+    purl_types_data = JSON.parse(File.read(File.join(project_root, "purl-types.json")))
+    purl_types_schema = JSON.parse(File.read(File.join(schemas_dir, "purl-types.schema.json")))
+    
+    errors = JSON::Validator.fully_validate(purl_types_schema, purl_types_data)
+    assert_empty errors, "purl-types.json failed schema validation: #{errors.join(', ')}"
+    
+    # Test test-suite-data.json against its schema
+    test_suite_data = JSON.parse(File.read(File.join(project_root, "test-suite-data.json")))
+    test_suite_schema = JSON.parse(File.read(File.join(schemas_dir, "test-suite-data.schema.json")))
+    
+    errors = JSON::Validator.fully_validate(test_suite_schema, test_suite_data)
+    assert_empty errors, "test-suite-data.json failed schema validation: #{errors.join(', ')}"
+  end
 end

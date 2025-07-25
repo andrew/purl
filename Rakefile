@@ -18,6 +18,7 @@ namespace :spec do
     puts "rake spec:debug       - Show detailed info about failing test cases"
     puts "rake spec:types       - Show information about all PURL types and their support"
     puts "rake spec:verify_types - Verify our types list against the official specification"
+    puts "rake spec:validate_schemas - Validate JSON files against their schemas"
     puts "rake spec:help        - Show this help message"
     puts
     puts "Example workflow:"
@@ -388,6 +389,87 @@ namespace :spec do
       
       success_rate = ((test_data.length - failed_cases.length).to_f / test_data.length * 100).round(1)
       puts "Overall success rate: #{success_rate}% (#{test_data.length - failed_cases.length}/#{test_data.length})"
+    end
+  end
+
+  desc "Validate JSON files against their schemas"
+  task :validate_schemas do
+    require "json"
+    require "json-schema"
+    
+    puts "🔍 Validating JSON files against schemas..."
+    puts "=" * 50
+    
+    schemas_dir = File.join(__dir__, "schemas")
+    
+    validations = [
+      {
+        name: "PURL Types Configuration",
+        data_file: "purl-types.json",
+        schema_file: File.join(schemas_dir, "purl-types.schema.json")
+      },
+      {
+        name: "Test Suite Data", 
+        data_file: "test-suite-data.json",
+        schema_file: File.join(schemas_dir, "test-suite-data.schema.json")
+      }
+    ]
+    
+    all_valid = true
+    
+    validations.each do |validation|
+      puts "\n📋 Validating #{validation[:name]}..."
+      
+      data_path = File.join(__dir__, validation[:data_file])
+      schema_path = validation[:schema_file]
+      
+      # Check if files exist
+      unless File.exist?(data_path)
+        puts "   ❌ Data file not found: #{validation[:data_file]}"
+        all_valid = false
+        next
+      end
+      
+      unless File.exist?(schema_path)
+        puts "   ❌ Schema file not found: #{validation[:schema_file]}"
+        all_valid = false
+        next
+      end
+      
+      begin
+        # Load and parse files
+        data = JSON.parse(File.read(data_path))
+        schema = JSON.parse(File.read(schema_path))
+        
+        # Validate
+        errors = JSON::Validator.fully_validate(schema, data)
+        
+        if errors.empty?
+          puts "   ✅ Valid - conforms to schema"
+        else
+          puts "   ❌ Invalid - found #{errors.length} error(s):"
+          errors.first(5).each { |error| puts "      • #{error}" }
+          if errors.length > 5
+            puts "      • ... and #{errors.length - 5} more errors"
+          end
+          all_valid = false
+        end
+        
+      rescue JSON::ParserError => e
+        puts "   ❌ JSON parsing error: #{e.message}"
+        all_valid = false
+      rescue => e
+        puts "   ❌ Validation error: #{e.message}"
+        all_valid = false
+      end
+    end
+    
+    puts "\n" + "=" * 50
+    if all_valid
+      puts "🎉 All JSON files are valid according to their schemas!"
+    else
+      puts "❌ One or more JSON files failed schema validation"
+      exit 1
     end
   end
 end

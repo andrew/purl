@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$id": "./schemas/purl-types.schema.json",
+  "title": "PURL Types Configuration Schema",
+  "description": "JSON schema for PURL types and registry URL patterns configuration",
+  "type": "object",
+  "required": ["version", "description", "source", "last_updated", "types"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "JSON Schema reference for this document"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of the configuration format",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the configuration file purpose"
+    },
+    "source": {
+      "type": "string",
+      "format": "uri",
+      "description": "Source URL for the PURL specification"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when the configuration was last updated"
+    },
+    "types": {
+      "type": "object",
+      "description": "Map of PURL type names to their configurations",
+      "patternProperties": {
+        "^[a-z][a-z0-9]*$": {
+          "$ref": "#/definitions/purlType"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "purlType": {
+      "type": "object",
+      "required": ["description", "default_registry"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the package type"
+        },
+        "default_registry": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "description": "Default registry URL for this package type"
+            },
+            {
+              "type": "null",
+              "description": "No default registry for this package type"
+            }
+          ]
+        },
+        "examples": {
+          "type": "array",
+          "description": "Array of example PURL strings for this type",
+          "items": {
+            "type": "string",
+            "pattern": "^pkg:[a-z][a-z0-9]*/"
+          },
+          "uniqueItems": true
+        },
+        "registry_config": {
+          "$ref": "#/definitions/registryConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+    "registryConfig": {
+      "type": "object",
+      "description": "Configuration for registry URL generation and parsing",
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Base URL for registry operations"
+        },
+        "route_patterns": {
+          "type": "array",
+          "description": "Array of URL pattern templates for this registry",
+          "items": {
+            "type": "string",
+            "format": "uri-template"
+          },
+          "minItems": 1
+        },
+        "reverse_regex": {
+          "type": "string",
+          "description": "Regular expression for parsing registry URLs back to PURLs"
+        },
+        "components": {
+          "$ref": "#/definitions/componentConfig"
+        }
+      },
+      "additionalProperties": false
+    },
+    "componentConfig": {
+      "type": "object",
+      "description": "Configuration for PURL component handling",
+      "properties": {
+        "namespace": {
+          "type": "boolean",
+          "description": "Whether this type supports namespaces"
+        },
+        "namespace_required": {
+          "type": "boolean",
+          "description": "Whether namespace is required for this type"
+        },
+        "namespace_prefix": {
+          "type": "string",
+          "description": "Prefix character for namespaces (e.g., '@' for npm)"
+        },
+        "version_in_url": {
+          "type": "boolean",
+          "description": "Whether version can be included in registry URLs"
+        },
+        "version_path": {
+          "type": "string",
+          "description": "Path separator for version in URLs"
+        },
+        "version_prefix": {
+          "type": "string",
+          "description": "Prefix character for version in URLs (e.g., '@' for deno)"
+        },
+        "version_separator": {
+          "type": "string",
+          "description": "Separator character for version (e.g., '-' for hackage)"
+        },
+        "trailing_slash": {
+          "type": "boolean",
+          "description": "Whether URLs require trailing slash"
+        },
+        "default_version": {
+          "type": "string",
+          "description": "Default version string to use when none specified"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
