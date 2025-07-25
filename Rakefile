@@ -562,3 +562,240 @@ namespace :spec do
     end
   end
 end
+
+namespace :benchmark do
+  desc "Run PURL parsing benchmarks"
+  task :parse do
+    require "benchmark"
+    require "json"
+    require_relative "lib/purl"
+    
+    puts "🚀 PURL Parsing Benchmarks"
+    puts "=" * 50
+    
+    # Load sample PURLs from purl-types.json
+    purl_types_data = JSON.parse(File.read(File.join(__dir__, "purl-types.json")))
+    sample_purls = []
+    
+    purl_types_data["types"].each do |type_name, type_config|
+      examples = type_config["examples"]
+      sample_purls.concat(examples) if examples&.is_a?(Array)
+    end
+    
+    # Add some complex PURLs for stress testing
+    complex_purls = [
+      "pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js",
+      "pkg:maven/org.apache.commons/commons-lang3@3.12.0?classifier=sources",
+      "pkg:composer/symfony/console@5.4.0?extra=test&dev=true#src/Application.php",
+      "pkg:gem/rails@7.0.0?platform=ruby&env=production#app/controllers/application_controller.rb"
+    ]
+    sample_purls.concat(complex_purls)
+    
+    puts "📊 Sample size: #{sample_purls.length} PURLs"
+    puts "📦 Package types: #{purl_types_data['types'].keys.length}"
+    puts
+    
+    # Benchmark parsing
+    puts "🔍 Parsing Performance:"
+    parsing_time = Benchmark.realtime do
+      sample_purls.each { |purl| Purl.parse(purl) }
+    end
+    
+    puts "   Total time: #{(parsing_time * 1000).round(2)}ms"
+    puts "   Average per PURL: #{(parsing_time * 1000 / sample_purls.length).round(3)}ms"
+    puts "   PURLs per second: #{(sample_purls.length / parsing_time).round(0)}"
+    puts
+    
+    # Benchmark creation
+    puts "🔧 Object Creation Performance:"
+    creation_time = Benchmark.realtime do
+      1000.times do
+        Purl::PackageURL.new(
+          type: "gem",
+          namespace: "rails",
+          name: "rails",
+          version: "7.0.0",
+          qualifiers: {"arch" => "x64"},
+          subpath: "app/models/user.rb"
+        )
+      end
+    end
+    
+    puts "   1000 objects: #{(creation_time * 1000).round(2)}ms"
+    puts "   Average per object: #{(creation_time * 1000 / 1000).round(3)}ms"
+    puts "   Objects per second: #{(1000 / creation_time).round(0)}"
+    puts
+    
+    # Benchmark to_s conversion
+    puts "🔤 String Conversion Performance:"
+    test_purl = Purl.parse("pkg:npm/@babel/core@7.20.0?arch=x64#lib/index.js")
+    
+    string_time = Benchmark.realtime do
+      10000.times { test_purl.to_s }
+    end
+    
+    puts "   10,000 conversions: #{(string_time * 1000).round(2)}ms"
+    puts "   Average per conversion: #{(string_time * 1000 / 10000).round(4)}ms"
+    puts "   Conversions per second: #{(10000 / string_time).round(0)}"
+    puts
+    
+    # Memory usage estimation
+    puts "💾 Memory Usage Estimation:"
+    purl_objects = sample_purls.map { |purl| Purl.parse(purl) }
+    
+    # Rough estimation based on object count and typical Ruby object overhead
+    estimated_memory = purl_objects.length * 200  # ~200 bytes per PURL object estimate
+    puts "   #{purl_objects.length} PURL objects: ~#{estimated_memory} bytes"
+    puts "   Average per object: ~200 bytes"
+    puts
+    
+    # Test different complexity levels
+    puts "🎯 Complexity Benchmarks:"
+    
+    complexity_tests = {
+      "Simple" => "pkg:gem/rails@7.0.0",
+      "With namespace" => "pkg:npm/@babel/core@7.0.0", 
+      "With qualifiers" => "pkg:cargo/rand@0.7.2?arch=x86_64&os=linux",
+      "With subpath" => "pkg:maven/org.springframework/spring-core@5.3.0#org/springframework/core/SpringVersion.class",
+      "Full complexity" => "pkg:npm/@babel/core@7.20.0?arch=x64&dev=true&os=linux#lib/parser/index.js"
+    }
+    
+    complexity_tests.each do |level, purl_string|
+      time = Benchmark.realtime do
+        1000.times { Purl.parse(purl_string) }
+      end
+      puts "   #{level.ljust(15)}: #{(time * 1000 / 1000).round(4)}ms per parse"
+    end
+    
+    puts
+    puts "✅ Benchmark completed!"
+  end
+  
+  desc "Compare parsing performance across package types"
+  task :types do
+    require "benchmark"
+    require "json"
+    require_relative "lib/purl"
+    
+    puts "📊 Package Type Parsing Comparison"
+    puts "=" * 50
+    
+    purl_types_data = JSON.parse(File.read(File.join(__dir__, "purl-types.json")))
+    
+    # Benchmark each type with its examples
+    type_benchmarks = {}
+    
+    purl_types_data["types"].each do |type_name, type_config|
+      examples = type_config["examples"]
+      next unless examples&.is_a?(Array) && examples.any?
+      
+      time = Benchmark.realtime do
+        100.times do
+          examples.each { |purl| Purl.parse(purl) }
+        end
+      end
+      
+      avg_time_per_purl = time / (100 * examples.length)
+      type_benchmarks[type_name] = {
+        time: avg_time_per_purl,
+        examples_count: examples.length
+      }
+    end
+    
+    # Sort by performance (fastest first)
+    sorted_benchmarks = type_benchmarks.sort_by { |_, data| data[:time] }
+    
+    puts "🏆 Performance Rankings (fastest to slowest):"
+    puts "   Rank Type         Avg Time/Parse  Examples"
+    puts "   " + "-" * 45
+    
+    sorted_benchmarks.each_with_index do |(type, data), index|
+      rank = (index + 1).to_s.rjust(2)
+      time_str = "#{(data[:time] * 1000).round(4)}ms".rjust(10)
+      examples_str = data[:examples_count].to_s.rjust(8)
+      
+      puts "   #{rank}.  #{type.ljust(12)} #{time_str}    #{examples_str}"
+    end
+    
+    fastest = sorted_benchmarks.first
+    slowest = sorted_benchmarks.last
+    
+    puts
+    puts "📈 Performance Summary:"
+    puts "   Fastest: #{fastest[0]} (#{(fastest[1][:time] * 1000).round(4)}ms)"
+    puts "   Slowest: #{slowest[0]} (#{(slowest[1][:time] * 1000).round(4)}ms)"
+    puts "   Ratio: #{(slowest[1][:time] / fastest[1][:time]).round(1)}x difference"
+    puts
+    puts "✅ Type comparison completed!"
+  end
+  
+  desc "Benchmark registry URL generation"
+  task :registry do
+    require "benchmark"
+    require "json"
+    require_relative "lib/purl"
+    
+    puts "🌐 Registry URL Generation Benchmarks"
+    puts "=" * 50
+    
+    # Get PURLs that support registry URL generation
+    registry_purls = []
+    Purl.registry_supported_types.each do |type|
+      examples = Purl.type_examples(type)
+      registry_purls.concat(examples) if examples.any?
+    end
+    
+    puts "📊 Testing with #{registry_purls.length} registry-supported PURLs"
+    puts
+    
+    # Parse all PURLs first
+    parsed_purls = registry_purls.map { |purl| Purl.parse(purl) }
+    
+    # Benchmark registry URL generation
+    puts "🔗 URL Generation Performance:"
+    url_time = Benchmark.realtime do
+      parsed_purls.each { |purl| purl.registry_url }
+    end
+    
+    puts "   Total time: #{(url_time * 1000).round(2)}ms"
+    puts "   Average per URL: #{(url_time * 1000 / parsed_purls.length).round(3)}ms"
+    puts "   URLs per second: #{(parsed_purls.length / url_time).round(0)}"
+    puts
+    
+    # Benchmark versioned URL generation
+    puts "🏷️  Versioned URL Performance:"
+    versioned_time = Benchmark.realtime do
+      parsed_purls.each { |purl| purl.registry_url_with_version }
+    end
+    
+    puts "   Total time: #{(versioned_time * 1000).round(2)}ms"
+    puts "   Average per URL: #{(versioned_time * 1000 / parsed_purls.length).round(3)}ms"
+    puts "   URLs per second: #{(parsed_purls.length / versioned_time).round(0)}"
+    puts
+    
+    # Compare parsing vs URL generation
+    parsing_time = Benchmark.realtime do
+      registry_purls.each { |purl| Purl.parse(purl) }
+    end
+    
+    puts "⚖️  Performance Comparison:"
+    puts "   Parsing: #{(parsing_time * 1000 / registry_purls.length).round(3)}ms per PURL"
+    puts "   URL generation: #{(url_time * 1000 / parsed_purls.length).round(3)}ms per PURL"
+    puts "   Versioned URLs: #{(versioned_time * 1000 / parsed_purls.length).round(3)}ms per PURL"
+    
+    ratio = url_time / parsing_time
+    puts "   URL gen vs parsing: #{ratio.round(2)}x #{ratio > 1 ? 'slower' : 'faster'}"
+    
+    puts
+    puts "✅ Registry URL benchmarks completed!"
+  end
+  
+  desc "Run all benchmarks"
+  task all: [:parse, :types, :registry] do
+    puts
+    puts "🎉 All benchmarks completed!"
+    puts "   Use 'rake benchmark:parse' for parsing performance"
+    puts "   Use 'rake benchmark:types' for type comparison"  
+    puts "   Use 'rake benchmark:registry' for URL generation"
+  end
+end

@@ -48,8 +48,8 @@ module Purl
     # @return [String, nil] subpath within the package
     attr_reader :subpath
 
-    VALID_TYPE_CHARS = /\A[a-zA-Z0-9\.\+\-]+\z/
-    VALID_QUALIFIER_KEY_CHARS = /\A[a-zA-Z0-9\.\-_]+\z/
+    VALID_TYPE_CHARS = /\A[a-zA-Z0-9\.\+\-]+\z/.freeze
+    VALID_QUALIFIER_KEY_CHARS = /\A[a-zA-Z0-9\.\-_]+\z/.freeze
 
     # Create a new PackageURL instance
     #
@@ -107,7 +107,7 @@ module Purl
 
       # Remove the pkg: prefix and any leading slashes (they're not significant)
       remainder = purl_string[4..-1]
-      remainder = remainder.sub(/\A\/+/, "")
+      remainder = remainder.sub(/\A\/+/, "") if remainder.start_with?("/")
       
       # Split off qualifiers (query string) first
       if remainder.include?("?")
@@ -223,17 +223,17 @@ module Purl
     #   purl = PackageURL.new(type: "gem", name: "rails", version: "7.0.0")
     #   puts purl.to_s  # "pkg:gem/rails@7.0.0"
     def to_s
-      result = "pkg:#{type.downcase}"
+      parts = ["pkg:", type.downcase]
       
       if namespace
         # Encode namespace parts, but preserve the structure
         namespace_parts = namespace.split("/").map do |part|
           URI.encode_www_form_component(part)
         end
-        result += "/#{namespace_parts.join("/")}"
+        parts << "/" << namespace_parts.join("/")
       end
       
-      result += "/#{URI.encode_www_form_component(name)}"
+      parts << "/" << URI.encode_www_form_component(name)
       
       if version
         # Special handling for version encoding - don't encode colon in certain contexts
@@ -244,7 +244,7 @@ module Purl
         else
           URI.encode_www_form_component(version)
         end
-        result += "@#{encoded_version}"
+        parts << "@" << encoded_version
       end
       
       if subpath
@@ -253,7 +253,7 @@ module Purl
         normalized_subpath = self.class.normalize_subpath(subpath)
         if normalized_subpath
           subpath_parts = normalized_subpath.split("/").map { |part| URI.encode_www_form_component(part) }
-          result += "##{subpath_parts.join("/")}"
+          parts << "#" << subpath_parts.join("/")
         end
       end
       
@@ -265,10 +265,10 @@ module Purl
           encoded_value = value.to_s  # Don't encode values to match canonical form
           "#{encoded_key}=#{encoded_value}"
         end
-        result += "?#{query_parts.join("&")}"
+        parts << "?" << query_parts.join("&")
       end
       
-      result
+      parts.join
     end
 
     # Convert the PackageURL to a hash representation
