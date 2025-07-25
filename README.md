@@ -230,10 +230,17 @@ puts Purl.default_registry("gem")               # => "https://rubygems.org"
 puts Purl.default_registry("npm")               # => "https://registry.npmjs.org"
 puts Purl.default_registry("golang")             # => nil (no default)
 
+# Get official examples for a type
+puts Purl.type_examples("gem")                  # => ["pkg:gem/rails@7.0.4", "pkg:gem/bundler@2.3.26", ...]
+puts Purl.type_examples("npm")                  # => ["pkg:npm/lodash@4.17.21", "pkg:npm/@babel/core@7.20.0", ...]
+puts Purl.type_examples("unknown")              # => []
+
 # Get detailed type information
 info = Purl.type_info("gem")
 puts info[:known]                     # => true
+puts info[:description]               # => "RubyGems"
 puts info[:default_registry]          # => "https://rubygems.org"
+puts info[:examples]                  # => ["pkg:gem/rails@7.0.4", ...]
 puts info[:registry_url_generation]   # => true
 puts info[:reverse_parsing]           # => true
 puts info[:route_patterns]            # => ["https://rubygems.org/gems/:name", ...]

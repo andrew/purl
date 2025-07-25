@@ -30,10 +30,19 @@ module Purl
       
       # Build full URLs from templates if we have a default registry
       route_patterns = []
-      if default_registry && config["path_template"]
-        route_patterns << default_registry + config["path_template"]
+      if default_registry
+        # Add all template variations
+        if config["path_template"]
+          route_patterns << default_registry + config["path_template"]
+        end
+        if config["namespace_path_template"]
+          route_patterns << default_registry + config["namespace_path_template"]
+        end
         if config["version_path_template"]
           route_patterns << default_registry + config["version_path_template"]
+        end
+        if config["namespace_version_path_template"]
+          route_patterns << default_registry + config["namespace_version_path_template"]
         end
       end
       # Fall back to legacy route_patterns if available
@@ -71,9 +80,16 @@ module Purl
     end
 
     def self.build_generation_lambda(type, config, default_registry = nil)
-      # Use base_url from config, or build from default_registry + path_template
-      base_url = config["base_url"] || (default_registry ? default_registry + config["path_template"]&.split('/:').first : nil)
-      return nil unless base_url
+      # Use base_url from config, or build from default_registry + path_template base
+      if config["base_url"]
+        base_url = config["base_url"]
+      elsif default_registry && config["path_template"]
+        # Extract the base path from the template (everything before first :parameter)
+        base_path = config["path_template"].split('/:').first
+        base_url = default_registry + base_path
+      else
+        return nil
+      end
       case type
       when "npm"
         ->(purl) do

@@ -58,7 +58,9 @@ module Purl
     {
       type: normalized_type,
       known: known_type?(normalized_type),
+      description: type_description(normalized_type),
       default_registry: default_registry(normalized_type),
+      examples: type_examples(normalized_type),
       registry_url_generation: RegistryURL.supports?(normalized_type),
       reverse_parsing: RegistryURL.supported_reverse_types.include?(normalized_type),
       route_patterns: RegistryURL.route_patterns_for(normalized_type)
@@ -96,6 +98,14 @@ module Purl
   def self.type_description(type)
     config = type_config(type)
     config ? config["description"] : nil
+  end
+
+  # Get examples for a type
+  def self.type_examples(type)
+    config = type_config(type)
+    return [] unless config
+    
+    config["examples"] || []
   end
 
   # Get registry configuration for a type

@@ -297,6 +297,23 @@ class TestPurl < Minitest::Test
     assert_nil Purl.default_registry("unknown")
   end
 
+  def test_type_examples
+    # Test types with examples
+    gem_examples = Purl.type_examples("gem")
+    assert_instance_of Array, gem_examples
+    assert_includes gem_examples, "pkg:gem/rails@7.0.4"
+    
+    npm_examples = Purl.type_examples("npm")
+    assert_includes npm_examples, "pkg:npm/@babel/core@7.20.0"
+    
+    cargo_examples = Purl.type_examples("cargo")
+    assert_includes cargo_examples, "pkg:cargo/rand@0.7.2"
+    
+    # Test type without examples
+    unknown_examples = Purl.type_examples("unknown")
+    assert_empty unknown_examples
+  end
+
   def test_from_registry_url_with_custom_domain
     # Test npm package on private registry
     private_npm_url = "https://npm.company.com/package/@babel/core"
@@ -520,7 +537,10 @@ class TestPurl < Minitest::Test
     
     assert_equal "gem", gem_info[:type]
     assert gem_info[:known]
+    assert_equal "RubyGems", gem_info[:description]
     assert_equal "https://rubygems.org", gem_info[:default_registry]
+    assert_instance_of Array, gem_info[:examples]
+    assert_includes gem_info[:examples], "pkg:gem/rails@7.0.4"
     assert gem_info[:registry_url_generation]
     assert gem_info[:reverse_parsing]
     assert_instance_of Array, gem_info[:route_patterns]
@@ -529,7 +549,9 @@ class TestPurl < Minitest::Test
     # Test unknown type
     unknown_info = Purl.type_info("unknown")
     refute unknown_info[:known]
+    assert_nil unknown_info[:description]
     assert_nil unknown_info[:default_registry]
+    assert_empty unknown_info[:examples]
     refute unknown_info[:registry_url_generation]
     refute unknown_info[:reverse_parsing]
     assert_empty unknown_info[:route_patterns]

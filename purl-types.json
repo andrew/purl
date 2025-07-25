@@ -6,26 +6,54 @@
   "types": {
     "alpm": {
       "description": "Arch Linux and other users of the libalpm/pacman package manager",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:alpm/arch/pacman@6.0.2-5?distro=arch",
+        "pkg:alpm/arch/curl@7.87.0-2?distro=arch",
+        "pkg:alpm/arch/systemd@252.4-2?distro=arch"
+      ]
     },
     "apk": {
       "description": "APK-based packages",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:apk/alpine/curl@7.83.0-r0?distro=alpine-3.16",
+        "pkg:apk/alpine/busybox@1.35.0-r17?distro=alpine-3.16",
+        "pkg:apk/alpine/musl@1.2.3-r0?distro=alpine-3.16"
+      ]
     },
     "bitbucket": {
       "description": "Bitbucket-based packages",
-      "default_registry": "https://bitbucket.org"
+      "default_registry": "https://bitbucket.org",
+      "examples": [
+        "pkg:bitbucket/atlassian/python-bitbucket@0.1.0",
+        "pkg:bitbucket/birkenfeld/pygments-main@2.13.0",
+        "pkg:bitbucket/pygame/pygame@2.1.2"
+      ]
     },
     "bitnami": {
       "description": "Bitnami-based packages",
-      "default_registry": "https://downloads.bitnami.com/files/stacksmith"
+      "default_registry": "https://downloads.bitnami.com/files/stacksmith",
+      "examples": [
+        "pkg:bitnami/wordpress@6.1.1-0",
+        "pkg:bitnami/mysql@8.0.31-0",
+        "pkg:bitnami/apache@2.4.54-0"
+      ]
     },
     "cargo": {
       "description": "Rust packages",
       "default_registry": "https://crates.io",
+      "examples": [
+        "pkg:cargo/rand@0.7.2",
+        "pkg:cargo/clap@4.0.32",
+        "pkg:cargo/serde@1.0.152"
+      ],
       "registry_config": {
-        "path_template": "/crates/:name",
-        "reverse_regex": "/crates/([^/?#]+)",
+        "base_url": "https://crates.io/crates",
+        "route_patterns": [
+          "https://crates.io/crates/:name"
+        ],
+        "reverse_regex": "^https://crates\\.io/crates/([^/?#]+)",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -35,6 +63,11 @@
     "cocoapods": {
       "description": "CocoaPods",
       "default_registry": "https://cdn.cocoapods.org/",
+      "examples": [
+        "pkg:cocoapods/Alamofire@5.6.4",
+        "pkg:cocoapods/SwiftyJSON@5.0.1",
+        "pkg:cocoapods/AFNetworking@4.0.1"
+      ],
       "registry_config": {
         "base_url": "https://cocoapods.org/pods",
         "route_patterns": [
@@ -50,6 +83,11 @@
     "composer": {
       "description": "Composer PHP packages",
       "default_registry": "https://packagist.org",
+      "examples": [
+        "pkg:composer/symfony/console@6.1.7",
+        "pkg:composer/laravel/framework@9.42.2",
+        "pkg:composer/phpunit/phpunit@9.5.27"
+      ],
       "registry_config": {
         "base_url": "https://packagist.org/packages",
         "route_patterns": [
@@ -65,11 +103,21 @@
     },
     "conan": {
       "description": "Conan C/C++ packages",
-      "default_registry": "https://center.conan.io"
+      "default_registry": "https://center.conan.io",
+      "examples": [
+        "pkg:conan/boost@1.80.0",
+        "pkg:conan/openssl@1.1.1s",
+        "pkg:conan/zlib@1.2.13"
+      ]
     },
     "conda": {
       "description": "Conda packages",
       "default_registry": "https://repo.anaconda.com",
+      "examples": [
+        "pkg:conda/numpy@1.24.1",
+        "pkg:conda/pandas@1.5.2",
+        "pkg:conda/matplotlib@3.6.2"
+      ],
       "registry_config": {
         "base_url": "https://anaconda.org/conda-forge",
         "route_patterns": [
@@ -85,6 +133,11 @@
     "cpan": {
       "description": "CPAN Perl packages",
       "default_registry": "https://www.cpan.org/",
+      "examples": [
+        "pkg:cpan/Moose@2.2014",
+        "pkg:cpan/DBI@1.643",
+        "pkg:cpan/Catalyst-Runtime@5.90128"
+      ],
       "registry_config": {
         "base_url": "https://metacpan.org/dist",
         "route_patterns": [
@@ -99,23 +152,46 @@
     },
     "cran": {
       "description": "CRAN R packages",
-      "default_registry": "https://cran.r-project.org"
+      "default_registry": "https://cran.r-project.org",
+      "examples": [
+        "pkg:cran/ggplot2@3.4.0",
+        "pkg:cran/dplyr@1.0.10",
+        "pkg:cran/devtools@2.4.5"
+      ]
     },
     "deb": {
       "description": "Debian, Debian derivatives, and Ubuntu packages",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:deb/debian/curl@7.74.0-1.3+deb11u3?distro=debian-11",
+        "pkg:deb/ubuntu/nginx@1.18.0-0ubuntu1.4?distro=ubuntu-20.04",
+        "pkg:deb/debian/git@1:2.30.2-1+deb11u2?distro=debian-11"
+      ]
     },
     "docker": {
       "description": "Docker images",
-      "default_registry": "https://hub.docker.com"
+      "default_registry": "https://hub.docker.com",
+      "examples": [
+        "pkg:docker/nginx@1.21.6",
+        "pkg:docker/ubuntu@20.04",
+        "pkg:docker/node@18.12.1"
+      ]
     },
     "gem": {
       "description": "RubyGems",
       "default_registry": "https://rubygems.org",
+      "examples": [
+        "pkg:gem/ruby-advisory-db-check@0.12.4",
+        "pkg:gem/rails@7.0.4",
+        "pkg:gem/bundler@2.3.26"
+      ],
       "registry_config": {
-        "path_template": "/gems/:name",
-        "version_path_template": "/gems/:name/versions/:version",
-        "reverse_regex": "/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
+        "base_url": "https://rubygems.org/gems",
+        "route_patterns": [
+          "https://rubygems.org/gems/:name",
+          "https://rubygems.org/gems/:name/versions/:version"
+        ],
+        "reverse_regex": "^https://rubygems\\.org/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -125,15 +201,29 @@
     },
     "generic": {
       "description": "Plain packages that do not fit anywhere else",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:generic/bitwardeninc/mobile@2023.1.0",
+        "pkg:generic/curl@7.80.0?distro=fedora-35",
+        "pkg:generic/openssl@1.1.1q"
+      ]
     },
     "github": {
       "description": "GitHub-based packages",
-      "default_registry": "https://github.com"
+      "default_registry": "https://github.com",
+      "examples": [
+        "pkg:github/torvalds/linux@6.1",
+        "pkg:github/microsoft/vscode@1.74.2",
+        "pkg:github/npm/cli@9.2.0"
+      ]
     },
     "golang": {
       "description": "Go packages",
       "default_registry": null,
+      "examples": [
+        "pkg:golang/google.golang.org/genproto#googleapis/api/annotations",
+        "pkg:golang/github.com/gorilla/mux@v1.8.0"
+      ],
       "registry_config": {
         "base_url": "https://pkg.go.dev",
         "route_patterns": [
@@ -151,6 +241,11 @@
     "hackage": {
       "description": "Haskell packages",
       "default_registry": "https://hackage.haskell.org",
+      "examples": [
+        "pkg:hackage/aeson@2.1.1.0",
+        "pkg:hackage/lens@5.2",
+        "pkg:hackage/mtl@2.2.2"
+      ],
       "registry_config": {
         "base_url": "https://hackage.haskell.org/package",
         "route_patterns": [
@@ -168,6 +263,11 @@
     "hex": {
       "description": "Hex packages",
       "default_registry": "https://repo.hex.pm",
+      "examples": [
+        "pkg:hex/phoenix@1.6.15",
+        "pkg:hex/ecto@3.9.4",
+        "pkg:hex/plug@1.14.0"
+      ],
       "registry_config": {
         "base_url": "https://hex.pm/packages",
         "route_patterns": [
@@ -182,15 +282,30 @@
     },
     "huggingface": {
       "description": "Hugging Face ML models",
-      "default_registry": "https://huggingface.co"
+      "default_registry": "https://huggingface.co",
+      "examples": [
+        "pkg:huggingface/transformers@4.25.1",
+        "pkg:huggingface/tokenizers@0.13.2",
+        "pkg:huggingface/datasets@2.7.1"
+      ]
     },
     "luarocks": {
       "description": "Lua packages installed with LuaRocks",
-      "default_registry": "https://luarocks.org"
+      "default_registry": "https://luarocks.org",
+      "examples": [
+        "pkg:luarocks/luasocket@3.0.0-1",
+        "pkg:luarocks/lfs@1.8.0-1",
+        "pkg:luarocks/lua-cjson@2.1.0-1"
+      ]
     },
     "maven": {
       "description": "Maven JARs and related artifacts",
       "default_registry": "https://repo.maven.apache.org/maven2",
+      "examples": [
+        "pkg:maven/org.apache.commons/commons-lang3@3.12.0",
+        "pkg:maven/junit/junit@4.13.2",
+        "pkg:maven/org.springframework/spring-core@5.3.23"
+      ],
       "registry_config": {
         "base_url": "https://mvnrepository.com/artifact",
         "route_patterns": [
@@ -208,11 +323,21 @@
     },
     "mlflow": {
       "description": "MLflow ML models",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:mlflow/model/sklearn-iris@1.0.0",
+        "pkg:mlflow/model/pytorch-mnist@2.1.0",
+        "pkg:mlflow/model/tensorflow-classification@1.5.0"
+      ]
     },
     "npm": {
       "description": "Node NPM packages",
       "default_registry": "https://registry.npmjs.org",
+      "examples": [
+        "pkg:npm/@babel/core@7.20.0",
+        "pkg:npm/lodash@4.17.21",
+        "pkg:npm/react@18.2.0"
+      ],
       "registry_config": {
         "base_url": "https://www.npmjs.com/package",
         "route_patterns": [
@@ -234,6 +359,11 @@
     "nuget": {
       "description": "NuGet .NET packages",
       "default_registry": "https://www.nuget.org",
+      "examples": [
+        "pkg:nuget/Newtonsoft.Json@13.0.1",
+        "pkg:nuget/EntityFramework@6.4.4",
+        "pkg:nuget/Microsoft.AspNetCore@6.0.13"
+      ],
       "registry_config": {
         "base_url": "https://www.nuget.org/packages",
         "route_patterns": [
@@ -250,11 +380,21 @@
     },
     "oci": {
       "description": "Artifacts stored in registries that conform to OCI Distribution Specification",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:oci/hello-world@sha256:90659bf80b44ce6be8234e6ff90a1ac34acbeb826903b02cfa0da11c82cbc042",
+        "pkg:oci/nginx@1.21.6",
+        "pkg:oci/ubuntu@20.04"
+      ]
     },
     "pub": {
       "description": "Dart and Flutter packages",
       "default_registry": "https://pub.dartlang.org",
+      "examples": [
+        "pkg:pub/http@0.13.5",
+        "pkg:pub/flutter@3.3.10",
+        "pkg:pub/provider@6.0.5"
+      ],
       "registry_config": {
         "base_url": "https://pub.dev/packages",
         "route_patterns": [
@@ -270,6 +410,11 @@
     "pypi": {
       "description": "Python packages",
       "default_registry": "https://pypi.org",
+      "examples": [
+        "pkg:pypi/django@4.1.4",
+        "pkg:pypi/requests@2.28.1",
+        "pkg:pypi/numpy@1.24.1"
+      ],
       "registry_config": {
         "base_url": "https://pypi.org/project",
         "route_patterns": [
@@ -287,19 +432,38 @@
     },
     "qpkg": {
       "description": "QNX packages",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:qpkg/qnx/libc@7.1.0",
+        "pkg:qpkg/qnx/procnto-smp@7.1.0",
+        "pkg:qpkg/qnx/ph@7.1.0"
+      ]
     },
     "rpm": {
       "description": "RPMs",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:rpm/fedora/curl@7.87.0-1.fc37?distro=fedora-37",
+        "pkg:rpm/centos/httpd@2.4.51-7.el8_5?distro=centos-8",
+        "pkg:rpm/opensuse/git@2.38.1-1.1?distro=opensuse-tumbleweed"
+      ]
     },
     "swid": {
       "description": "Software Identification (SWID) tags",
-      "default_registry": null
+      "default_registry": null,
+      "examples": [
+        "pkg:swid/microsoft.com/Microsoft%20Office@16.0.12345.67890",
+        "pkg:swid/adobe.com/Photoshop@23.1.0",
+        "pkg:swid/oracle.com/Java%20SE@8u351"
+      ]
     },
     "swift": {
       "description": "Swift packages",
       "default_registry": null,
+      "examples": [
+        "pkg:swift/github.com/Alamofire/Alamofire@5.6.4",
+        "pkg:swift/github.com/apple/swift-package-manager@1.7.0"
+      ],
       "registry_config": {
         "base_url": "https://swiftpackageindex.com",
         "route_patterns": [
@@ -316,6 +480,10 @@
     "deno": {
       "description": "Deno packages",
       "default_registry": null,
+      "examples": [
+        "pkg:deno/oak@12.0.0",
+        "pkg:deno/std@0.177.0#http/server"
+      ],
       "registry_config": {
         "base_url": "https://deno.land/x",
         "route_patterns": [
@@ -333,6 +501,10 @@
     "homebrew": {
       "description": "Homebrew packages",
       "default_registry": null,
+      "examples": [
+        "pkg:homebrew/wget@1.21.3",
+        "pkg:homebrew/node@19.6.0"
+      ],
       "registry_config": {
         "base_url": "https://formulae.brew.sh/formula",
         "route_patterns": [
@@ -348,6 +520,10 @@
     "bioconductor": {
       "description": "Bioconductor packages",
       "default_registry": null,
+      "examples": [
+        "pkg:bioconductor/IRanges@2.28.0",
+        "pkg:bioconductor/GenomicRanges@1.46.1"
+      ],
       "registry_config": {
         "base_url": "https://bioconductor.org/packages",
         "route_patterns": [
@@ -363,6 +539,10 @@
     "clojars": {
       "description": "Clojars packages",
       "default_registry": null,
+      "examples": [
+        "pkg:clojars/org.clojure/clojure@1.11.1",
+        "pkg:clojars/ring/ring-core@1.9.5"
+      ],
       "registry_config": {
         "base_url": "https://clojars.org",
         "route_patterns": [
@@ -380,6 +560,10 @@
     "elm": {
       "description": "Elm packages",
       "default_registry": null,
+      "examples": [
+        "pkg:elm/elm/http@2.0.0",
+        "pkg:elm/elm-community/json-extra@4.3.0"
+      ],
       "registry_config": {
         "base_url": "https://package.elm-lang.org/packages",
         "route_patterns": [
