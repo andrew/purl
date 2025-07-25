@@ -600,4 +600,50 @@ class TestPurl < Minitest::Test
     errors = JSON::Validator.fully_validate(test_suite_schema, test_suite_data)
     assert_empty errors, "test-suite-data.json failed schema validation: #{errors.join(', ')}"
   end
+
+  def test_purl_types_examples_validation
+    require "json"
+    
+    project_root = File.dirname(__dir__)
+    purl_types_data = JSON.parse(File.read(File.join(project_root, "purl-types.json")))
+    
+    invalid_examples = []
+    
+    purl_types_data["types"].each do |type_name, type_config|
+      examples = type_config["examples"]
+      next unless examples && examples.is_a?(Array)
+      
+      examples.each do |example_purl|
+        begin
+          # Try to parse the example PURL
+          parsed = Purl::PackageURL.parse(example_purl)
+          
+          # Verify the type matches
+          unless parsed.type == type_name
+            invalid_examples << {
+              type: type_name,
+              example: example_purl,
+              error: "Type mismatch: expected '#{type_name}', got '#{parsed.type}'"
+            }
+          end
+          
+        rescue => e
+          invalid_examples << {
+            type: type_name,
+            example: example_purl,
+            error: "#{e.class}: #{e.message}"
+          }
+        end
+      end
+    end
+    
+    # Report any invalid examples
+    unless invalid_examples.empty?
+      error_msg = "Found #{invalid_examples.length} invalid PURL examples:\n"
+      invalid_examples.each do |invalid|
+        error_msg += "  #{invalid[:type]}: #{invalid[:example]} - #{invalid[:error]}\n"
+      end
+      flunk error_msg
+    end
+  end
 end

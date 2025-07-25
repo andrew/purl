@@ -19,6 +19,7 @@ namespace :spec do
     puts "rake spec:types       - Show information about all PURL types and their support"
     puts "rake spec:verify_types - Verify our types list against the official specification"
     puts "rake spec:validate_schemas - Validate JSON files against their schemas"
+    puts "rake spec:validate_examples - Validate all PURL examples in purl-types.json"
     puts "rake spec:help        - Show this help message"
     puts
     puts "Example workflow:"
@@ -469,6 +470,76 @@ namespace :spec do
       puts "🎉 All JSON files are valid according to their schemas!"
     else
       puts "❌ One or more JSON files failed schema validation"
+      exit 1
+    end
+  end
+
+  desc "Validate all PURL examples in purl-types.json"
+  task :validate_examples do
+    require "json"
+    require_relative "lib/purl"
+    
+    puts "🔍 Validating PURL examples in purl-types.json..."
+    puts "=" * 60
+    
+    project_root = __dir__
+    purl_types_data = JSON.parse(File.read(File.join(project_root, "purl-types.json")))
+    
+    total_examples = 0
+    invalid_examples = []
+    
+    purl_types_data["types"].each do |type_name, type_config|
+      examples = type_config["examples"]
+      next unless examples && examples.is_a?(Array)
+      
+      puts "\n📦 #{type_name} (#{examples.length} examples):"
+      
+      examples.each do |example_purl|
+        total_examples += 1
+        
+        begin
+          # Try to parse the example PURL
+          parsed = Purl::PackageURL.parse(example_purl)
+          
+          # Verify the type matches
+          if parsed.type == type_name
+            puts "   ✅ #{example_purl}"
+          else
+            puts "   ❌ #{example_purl} - Type mismatch: expected '#{type_name}', got '#{parsed.type}'"
+            invalid_examples << {
+              type: type_name,
+              example: example_purl,
+              error: "Type mismatch: expected '#{type_name}', got '#{parsed.type}'"
+            }
+          end
+          
+        rescue => e
+          puts "   ❌ #{example_purl} - #{e.class}: #{e.message}"
+          invalid_examples << {
+            type: type_name,
+            example: example_purl,
+            error: "#{e.class}: #{e.message}"
+          }
+        end
+      end
+    end
+    
+    puts "\n" + "=" * 60
+    puts "📊 Validation Summary:"
+    puts "   Total examples: #{total_examples}"
+    puts "   Valid examples: #{total_examples - invalid_examples.length}"
+    puts "   Invalid examples: #{invalid_examples.length}"
+    
+    if invalid_examples.empty?
+      puts "\n🎉 All PURL examples are valid!"
+    else
+      puts "\n❌ Found #{invalid_examples.length} invalid examples:"
+      invalid_examples.each do |invalid|
+        puts "   • #{invalid[:type]}: #{invalid[:example]}"
+        puts "     Error: #{invalid[:error]}"
+      end
+      
+      puts "\n📝 These examples should be reported upstream to the PURL specification maintainers."
       exit 1
     end
   end
