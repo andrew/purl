@@ -8,19 +8,19 @@ This library provides better error handling than existing solutions with namespa
 [![Gem Version](https://badge.fury.io/rb/purl.svg)](https://rubygems.org/gems/purl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**🔗 [Available on RubyGems](https://rubygems.org/gems/purl)**
+**[Available on RubyGems](https://rubygems.org/gems/purl)**
 
 ## Features
 
-- 🎯 **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
-- 🔥 **Better error handling** with namespaced error classes and contextual information
-- 🔄 **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
-- 📋 **Type-specific validation** for conan, cran, and swift packages
-- 🌐 **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
-- 🎨 **Rails-style route patterns** for registry URL templates
-- 📊 **100% compliance** with official PURL specification test suite (59/59 tests passing)
-- 🤝 **Cross-language compatibility** with JSON-based configuration
-- 📚 **Comprehensive documentation** and examples
+- **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
+- **Better error handling** with namespaced error classes and contextual information
+- **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
+- **Type-specific validation** for conan, cran, and swift packages
+- **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
+- **Rails-style route patterns** for registry URL templates
+- **100% compliance** with official PURL specification test suite (59/59 tests passing)
+- **Cross-language compatibility** with JSON-based configuration
+- **Comprehensive documentation** and examples
 
 ## Installation
 
@@ -394,8 +394,9 @@ rake spec:verify_types
 
 If you find this project useful, please consider supporting its development:
 
-- 💝 [GitHub Sponsors](https://github.com/sponsors/andrew)
-- ☕ [Buy me a coffee](https://www.buymeacoffee.com/andrew)
+- [GitHub Sponsors](https://github.com/sponsors/andrew)
+- [Ko-fi](https://ko-fi.com/andrewnez)
+- [Buy Me a Coffee](https://www.buymeacoffee.com/andrewnez)
 
 Your support helps maintain and improve this library for the entire Ruby community.
 
