@@ -345,12 +345,7 @@ class TestPurl < Minitest::Test
 
   def test_from_registry_url_custom_domain_wrong_type
     # Test error when URL structure doesn't match the specified type
-    gem_url = "https://rubygems.org/gems/rails"
-    
-    # Try to parse gem URL as npm type - should fail because gem URL structure 
-    # doesn't match npm URL structure (/package/ vs /gems/)
-    # However, our current implementation is quite permissive, so let's test with
-    # a URL that definitely won't match npm pattern
+    # Try to parse a URL that definitely won't match npm pattern
     bad_url = "https://example.com/completely/different/structure"
     
     assert_raises(Purl::UnsupportedTypeError) do
