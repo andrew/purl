@@ -16,8 +16,9 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json-schema (4.3.1)
-      addressable (>= 2.8)
+    json-schema (5.2.1)
+      addressable (~> 2.8)
+      bigdecimal (~> 3.1)
     minitest (5.25.5)
     pp (0.6.2)
       prettyprint
@@ -39,9 +40,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bigdecimal
   irb
-  json-schema (~> 4.0)
+  json-schema (~> 5.0)
   minitest (~> 5.16)
   purl!
   rake (~> 13.0)
@@ -53,7 +53,7 @@ CHECKSUMS
   erb (5.0.2) sha256=d30f258143d4300fb4ecf430042ac12970c9bb4b33c974a545b8f58c1ec26c0f
   io-console (0.8.1) sha256=1e15440a6b2f67b6ea496df7c474ed62c860ad11237f29b3bd187f054b925fcb
   irb (1.15.2) sha256=222f32952e278da34b58ffe45e8634bf4afc2dc7aa9da23fed67e581aa50fdba
-  json-schema (4.3.1) sha256=d5e68dc32b94408d0b06ad04f9382ccbb6fe5a44910e066f8547f56c471a7825
+  json-schema (5.2.1) sha256=1ef39286c4771e7a71661d955fec9b66d1d1708547a0071c130af7c0a9264898
   minitest (5.25.5) sha256=391b6c6cb43a4802bfb7c93af1ebe2ac66a210293f4a3fb7db36f2fc7dc2c756
   pp (0.6.2) sha256=947ec3120c6f92195f8ee8aa25a7b2c5297bb106d83b41baa02983686577b6ff
   prettyprint (0.2.0) sha256=2bc9e15581a94742064a3cc8b0fb9d45aae3d03a1baa6ef80922627a0766f193
