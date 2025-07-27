@@ -1,25 +1,24 @@
 {
   "version": "1.0.0",
-  "description": "PURL types and registry URL patterns for package ecosystems",
-  "source": "https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst",
-  "last_updated": "2025-07-24",
+  "description": "Official PURL types with registry configurations",
+  "source": "https://github.com/package-url/purl-spec",
+  "last_updated": "2025-07-27",
   "types": {
     "alpm": {
-      "description": "Arch Linux and other users of the libalpm/pacman package manager",
+      "description": "Arch Linux packages and other users of the libalpm/pacman package manager.",
       "default_registry": null,
       "examples": [
-        "pkg:alpm/arch/pacman@6.0.2-5?distro=arch",
-        "pkg:alpm/arch/curl@7.87.0-2?distro=arch",
-        "pkg:alpm/arch/systemd@252.4-2?distro=arch"
+        "pkg:alpm/arch/pacman@6.0.1-1?arch=x86_64",
+        "pkg:alpm/arch/python-pip@21.0-1?arch=any",
+        "pkg:alpm/arch/containers-common@1:0.47.4-4?arch=x86_64"
       ]
     },
     "apk": {
-      "description": "APK-based packages",
+      "description": "Alpine Linux APK-based packages",
       "default_registry": null,
       "examples": [
-        "pkg:apk/alpine/curl@7.83.0-r0?distro=alpine-3.16",
-        "pkg:apk/alpine/busybox@1.35.0-r17?distro=alpine-3.16",
-        "pkg:apk/alpine/musl@1.2.3-r0?distro=alpine-3.16"
+        "pkg:apk/alpine/curl@7.83.0-r0?arch=x86",
+        "pkg:apk/alpine/apk@2.12.9-r3?arch=x86"
       ]
     },
     "bitbucket": {
@@ -33,15 +32,16 @@
     },
     "bitnami": {
       "description": "Bitnami-based packages",
-      "default_registry": "https://downloads.bitnami.com/files/stacksmith",
+      "default_registry": null,
       "examples": [
-        "pkg:bitnami/wordpress@6.1.1-0",
-        "pkg:bitnami/mysql@8.0.31-0",
-        "pkg:bitnami/apache@2.4.54-0"
+        "pkg:bitnami/wordpress?distro=debian-12",
+        "pkg:bitnami/wordpress@6.2.0?distro=debian-12",
+        "pkg:bitnami/wordpress@6.2.0?arch=arm64&distro=debian-12",
+        "pkg:bitnami/wordpress@6.2.0?arch=arm64&distro=photon-4"
       ]
     },
     "cargo": {
-      "description": "Rust packages",
+      "description": "Cargo packages for Rust",
       "default_registry": "https://crates.io",
       "examples": [
         "pkg:cargo/rand@0.7.2",
@@ -61,7 +61,7 @@
       }
     },
     "cocoapods": {
-      "description": "CocoaPods",
+      "description": "CocoaPods pods",
       "default_registry": "https://cdn.cocoapods.org/",
       "examples": [
         "pkg:cocoapods/Alamofire@5.6.4",
@@ -102,16 +102,16 @@
       }
     },
     "conan": {
-      "description": "Conan C/C++ packages",
-      "default_registry": "https://center.conan.io",
+      "description": "Conan C/C++ packages. The purl is designed to closely resemble the Conan-native <package-name>/<package-version>@<user>/<channel> syntax for package references as specified in https://docs.conan.io/en/1.46/cheatsheet.html#package-terminology",
+      "default_registry": null,
       "examples": [
-        "pkg:conan/boost@1.80.0",
-        "pkg:conan/openssl@1.1.1s",
-        "pkg:conan/zlib@1.2.13"
+        "pkg:conan/openssl@3.0.3",
+        "pkg:conan/openssl.org/openssl@3.0.3?user=bincrafters&channel=stable",
+        "pkg:conan/openssl.org/openssl@3.0.3?arch=x86_64&build_type=Debug&compiler=Visual%20Studio&compiler.runtime=MDd&compiler.version=16&os=Windows&shared=True&rrev=93a82349c31917d2d674d22065c7a9ef9f380c8e&prev=b429db8a0e324114c25ec387bfd8281f330d7c5c"
       ]
     },
     "conda": {
-      "description": "Conda packages",
+      "description": "conda is for Conda packages",
       "default_registry": "https://repo.anaconda.com",
       "examples": [
         "pkg:conda/numpy@1.24.1",
@@ -160,16 +160,18 @@
       ]
     },
     "deb": {
-      "description": "Debian, Debian derivatives, and Ubuntu packages",
+      "description": "Debian packages, Debian derivatives, and Ubuntu packages",
       "default_registry": null,
       "examples": [
-        "pkg:deb/debian/curl@7.74.0-1.3+deb11u3?distro=debian-11",
-        "pkg:deb/ubuntu/nginx@1.18.0-0ubuntu1.4?distro=ubuntu-20.04",
-        "pkg:deb/debian/git@1:2.30.2-1+deb11u2?distro=debian-11"
+        "pkg:deb/debian/curl@7.50.3-1?arch=i386&distro=jessie",
+        "pkg:deb/debian/dpkg@1.19.0.4?arch=amd64&distro=stretch",
+        "pkg:deb/ubuntu/dpkg@1.19.0.4?arch=amd64",
+        "pkg:deb/debian/attr@1:2.4.47-2?arch=source",
+        "pkg:deb/debian/attr@1:2.4.47-2%2Bb1?arch=amd64"
       ]
     },
     "docker": {
-      "description": "Docker images",
+      "description": "for Docker images",
       "default_registry": "https://hub.docker.com",
       "examples": [
         "pkg:docker/nginx@1.21.6",
@@ -200,12 +202,12 @@
       }
     },
     "generic": {
-      "description": "Plain packages that do not fit anywhere else",
+      "description": "The generic type is for plain, generic packages that do not fit anywhere else such as for \"upstream-from-distro\" packages. In particular this is handy for a plain version control repository such as a bare git repo in combination with a vcs_url.",
       "default_registry": null,
       "examples": [
-        "pkg:generic/bitwardeninc/mobile@2023.1.0",
-        "pkg:generic/curl@7.80.0?distro=fedora-35",
-        "pkg:generic/openssl@1.1.1q"
+        "pkg:generic/openssl@1.1.10g",
+        "pkg:generic/openssl@1.1.10g?download_url=https://openssl.org/source/openssl-1.1.0g.tar.gz&checksum=sha256:de4d501267da",
+        "pkg:generic/bitwarderl?vcs_url=git%2Bhttps://git.fsfe.org/dxtr/bitwarderl%40cc55108da32"
       ]
     },
     "github": {
@@ -221,22 +223,10 @@
       "description": "Go packages",
       "default_registry": null,
       "examples": [
+        "pkg:golang/github.com/gorilla/context@234fd47e07d1004f0aed9c",
         "pkg:golang/google.golang.org/genproto#googleapis/api/annotations",
-        "pkg:golang/github.com/gorilla/mux@v1.8.0"
-      ],
-      "registry_config": {
-        "base_url": "https://pkg.go.dev",
-        "route_patterns": [
-          "https://pkg.go.dev/:namespace/:name",
-          "https://pkg.go.dev/:name"
-        ],
-        "reverse_regex": "^https://pkg\\.go\\.dev/(?:([^/?#]+)/)?([^/?#]+)",
-        "components": {
-          "namespace": true,
-          "namespace_required": false,
-          "version_in_url": false
-        }
-      }
+        "pkg:golang/github.com/gorilla/context@234fd47e07d1004f0aed9c#api"
+      ]
     },
     "hackage": {
       "description": "Haskell packages",
@@ -282,24 +272,23 @@
     },
     "huggingface": {
       "description": "Hugging Face ML models",
-      "default_registry": "https://huggingface.co",
+      "default_registry": null,
       "examples": [
-        "pkg:huggingface/transformers@4.25.1",
-        "pkg:huggingface/tokenizers@0.13.2",
-        "pkg:huggingface/datasets@2.7.1"
+        "pkg:huggingface/distilbert-base-uncased@043235d6088ecd3dd5fb5ca3592b6913fd516027",
+        "pkg:huggingface/microsoft/deberta-v3-base@559062ad13d311b87b2c455e67dcd5f1c8f65111?repository_url=https://hub-ci.huggingface.co"
       ]
     },
     "luarocks": {
       "description": "Lua packages installed with LuaRocks",
-      "default_registry": "https://luarocks.org",
+      "default_registry": null,
       "examples": [
-        "pkg:luarocks/luasocket@3.0.0-1",
-        "pkg:luarocks/lfs@1.8.0-1",
-        "pkg:luarocks/lua-cjson@2.1.0-1"
+        "pkg:luarocks/luasocket@3.1.0-1",
+        "pkg:luarocks/hisham/luafilesystem@1.8.0-1",
+        "pkg:luarocks/username/packagename@0.1.0-1?repository_url=https://example.com/private_rocks_server/"
       ]
     },
     "maven": {
-      "description": "Maven JARs and related artifacts",
+      "description": "PURL type for Maven JARs and related artifacts.",
       "default_registry": "https://repo.maven.apache.org/maven2",
       "examples": [
         "pkg:maven/org.apache.commons/commons-lang3@3.12.0",
@@ -322,16 +311,15 @@
       }
     },
     "mlflow": {
-      "description": "MLflow ML models",
+      "description": "MLflow ML models (Azure ML, Databricks, etc.)",
       "default_registry": null,
       "examples": [
-        "pkg:mlflow/model/sklearn-iris@1.0.0",
-        "pkg:mlflow/model/pytorch-mnist@2.1.0",
-        "pkg:mlflow/model/tensorflow-classification@1.5.0"
+        "pkg:mlflow/creditfraud@3?repository_url=https://westus2.api.azureml.ms/mlflow/v1.0/subscriptions/a50f2011-fab8-4164-af23-c62881ef8c95/resourceGroups/TestResourceGroup/providers/Microsoft.MachineLearningServices/workspaces/TestWorkspace",
+        "pkg:mlflow/trafficsigns@10?model_uuid=36233173b22f4c89b451f1228d700d49&run_id=410a3121-2709-4f88-98dd-dba0ef056b0a&repository_url=https://adb-5245952564735461.0.azuredatabricks.net/api/2.0/mlflow"
       ]
     },
     "npm": {
-      "description": "Node NPM packages",
+      "description": "PURL type for npm packages.",
       "default_registry": "https://registry.npmjs.org",
       "examples": [
         "pkg:npm/@babel/core@7.20.0",
@@ -379,16 +367,17 @@
       }
     },
     "oci": {
-      "description": "Artifacts stored in registries that conform to OCI Distribution Specification",
+      "description": "For artifacts stored in registries that conform to the OCI Distribution Specification https://github.com/opencontainers/distribution-spec including container images built by Docker and others",
       "default_registry": null,
       "examples": [
-        "pkg:oci/hello-world@sha256:90659bf80b44ce6be8234e6ff90a1ac34acbeb826903b02cfa0da11c82cbc042",
-        "pkg:oci/nginx@1.21.6",
-        "pkg:oci/ubuntu@20.04"
+        "pkg:oci/debian@sha256%3A244fd47e07d10?repository_url=docker.io/library/debian&arch=amd64&tag=latest",
+        "pkg:oci/debian@sha256%3A244fd47e07d10?repository_url=ghcr.io/debian&tag=bullseye",
+        "pkg:oci/static@sha256%3A244fd47e07d10?repository_url=gcr.io/distroless/static&tag=latest",
+        "pkg:oci/hello-wasm@sha256%3A244fd47e07d10?tag=v1"
       ]
     },
     "pub": {
-      "description": "Dart and Flutter packages",
+      "description": "Dart and Flutter pub packages",
       "default_registry": "https://pub.dartlang.org",
       "examples": [
         "pkg:pub/http@0.13.5",
@@ -434,27 +423,25 @@
       "description": "QNX packages",
       "default_registry": null,
       "examples": [
-        "pkg:qpkg/qnx/libc@7.1.0",
-        "pkg:qpkg/qnx/procnto-smp@7.1.0",
-        "pkg:qpkg/qnx/ph@7.1.0"
+        "pkg:qpkg/blackberry/com.qnx.sdp@7.0.0.SGA201702151847",
+        "pkg:qpkg/blackberry/com.qnx.qnx710.foo.bar.qux@0.0.4.01449T202205040833L"
       ]
     },
     "rpm": {
-      "description": "RPMs",
+      "description": "RPM packages",
       "default_registry": null,
       "examples": [
-        "pkg:rpm/fedora/curl@7.87.0-1.fc37?distro=fedora-37",
-        "pkg:rpm/centos/httpd@2.4.51-7.el8_5?distro=centos-8",
-        "pkg:rpm/opensuse/git@2.38.1-1.1?distro=opensuse-tumbleweed"
+        "pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25",
+        "pkg:rpm/centerim@4.22.10-1.el6?arch=i686&epoch=1&distro=fedora-25"
       ]
     },
     "swid": {
-      "description": "Software Identification (SWID) tags",
+      "description": "PURL type for ISO-IEC 19770-2 Software Identification (SWID) tags.",
       "default_registry": null,
       "examples": [
-        "pkg:swid/microsoft.com/Microsoft%20Office@16.0.12345.67890",
-        "pkg:swid/adobe.com/Photoshop@23.1.0",
-        "pkg:swid/oracle.com/Java%20SE@8u351"
+        "pkg:swid/Acme/example.com/Enterprise+Server@1.0.0?tag_id=75b8c285-fa7b-485b-b199-4745e3004d0d",
+        "pkg:swid/Fedora@29?tag_id=org.fedoraproject.Fedora-29",
+        "pkg:swid/Adobe+Systems+Incorporated/Adobe+InDesign@CC?tag_id=CreativeCloud-CS6-Win-GM-MUL"
       ]
     },
     "swift": {
@@ -474,6 +461,49 @@
           "namespace": true,
           "namespace_required": true,
           "version_in_url": false
+        }
+      }
+    },
+    "clojars": {
+      "description": "Clojars packages",
+      "default_registry": null,
+      "examples": [
+        "pkg:clojars/org.clojure/clojure@1.11.1",
+        "pkg:clojars/ring/ring-core@1.9.5"
+      ],
+      "registry_config": {
+        "base_url": "https://clojars.org",
+        "route_patterns": [
+          "https://clojars.org/:namespace/:name",
+          "https://clojars.org/:name"
+        ],
+        "reverse_regex": "^https://clojars\\.org/(?:([^/?#]+)/)?([^/?#]+)",
+        "components": {
+          "namespace": true,
+          "namespace_required": false,
+          "version_in_url": false
+        }
+      }
+    },
+    "elm": {
+      "description": "Elm packages",
+      "default_registry": null,
+      "examples": [
+        "pkg:elm/elm/http@2.0.0",
+        "pkg:elm/elm-community/json-extra@4.3.0"
+      ],
+      "registry_config": {
+        "base_url": "https://package.elm-lang.org/packages",
+        "route_patterns": [
+          "https://package.elm-lang.org/packages/:namespace/:name/latest",
+          "https://package.elm-lang.org/packages/:namespace/:name/:version"
+        ],
+        "reverse_regex": "^https://package\\.elm-lang\\.org/packages/([^/?#]+)/([^/?#]+)(?:/([^/?#]+))?",
+        "components": {
+          "namespace": true,
+          "namespace_required": true,
+          "version_in_url": true,
+          "default_version": "latest"
         }
       }
     },
@@ -533,49 +563,6 @@
         "components": {
           "namespace": false,
           "version_in_url": false
-        }
-      }
-    },
-    "clojars": {
-      "description": "Clojars packages",
-      "default_registry": null,
-      "examples": [
-        "pkg:clojars/org.clojure/clojure@1.11.1",
-        "pkg:clojars/ring/ring-core@1.9.5"
-      ],
-      "registry_config": {
-        "base_url": "https://clojars.org",
-        "route_patterns": [
-          "https://clojars.org/:namespace/:name",
-          "https://clojars.org/:name"
-        ],
-        "reverse_regex": "^https://clojars\\.org/(?:([^/?#]+)/)?([^/?#]+)",
-        "components": {
-          "namespace": true,
-          "namespace_required": false,
-          "version_in_url": false
-        }
-      }
-    },
-    "elm": {
-      "description": "Elm packages",
-      "default_registry": null,
-      "examples": [
-        "pkg:elm/elm/http@2.0.0",
-        "pkg:elm/elm-community/json-extra@4.3.0"
-      ],
-      "registry_config": {
-        "base_url": "https://package.elm-lang.org/packages",
-        "route_patterns": [
-          "https://package.elm-lang.org/packages/:namespace/:name/latest",
-          "https://package.elm-lang.org/packages/:namespace/:name/:version"
-        ],
-        "reverse_regex": "^https://package\\.elm-lang\\.org/packages/([^/?#]+)/([^/?#]+)(?:/([^/?#]+))?",
-        "components": {
-          "namespace": true,
-          "namespace_required": true,
-          "version_in_url": true,
-          "default_version": "latest"
         }
       }
     }

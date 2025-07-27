@@ -532,14 +532,15 @@ module Purl
     end
 
     def validate_conan_specific_rules
-      # For conan packages, if a namespace is present WITHOUT any qualifiers, 
-      # it's ambiguous (test case 30)
-      if @namespace && (@qualifiers.nil? || (@qualifiers["user"].nil? && @qualifiers["channel"].nil?))
+      # For conan packages, if a namespace is present WITHOUT any qualifiers at all, 
+      # it's ambiguous. However, any qualifiers (including build settings) make it unambiguous.
+      # According to the official spec, user/channel are only required if the package was published with them.
+      if @namespace && (@qualifiers.nil? || @qualifiers.empty?)
         raise ValidationError.new(
-          "Conan PURLs with namespace require 'user' and/or 'channel' qualifiers to be unambiguous",
+          "Conan PURLs with namespace require qualifiers to be unambiguous",
           component: :qualifiers,
           value: @qualifiers,
-          rule: "conan packages with namespace need user/channel qualifiers"
+          rule: "conan packages with namespace need qualifiers for disambiguation"
         )
       end
       

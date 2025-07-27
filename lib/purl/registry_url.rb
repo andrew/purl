@@ -5,7 +5,7 @@ module Purl
     # Load registry patterns from JSON configuration
     def self.load_registry_patterns
       @registry_patterns ||= begin
-        # Load JSON config directly to avoid circular dependency
+        # Load extended registry configs
         config_path = File.join(__dir__, "..", "..", "purl-types.json")
         require "json"
         config = JSON.parse(File.read(config_path))
@@ -16,37 +16,19 @@ module Purl
           next unless type_config["registry_config"]
           
           registry_config = type_config["registry_config"]
-          patterns[type] = build_pattern_config(type, registry_config)
+          patterns[type] = build_pattern_config(type, registry_config, type_config)
         end
         
         patterns
       end
     end
 
-    def self.build_pattern_config(type, config)
-      # Get the default registry for this type from parent config
-      type_config = load_types_config["types"][type]
+    def self.build_pattern_config(type, config, type_config)
+      # Get the default registry for this type from the extended config
       default_registry = type_config["default_registry"]
       
-      # Build full URLs from templates if we have a default registry
-      route_patterns = []
-      if default_registry
-        # Add all template variations
-        if config["path_template"]
-          route_patterns << default_registry + config["path_template"]
-        end
-        if config["namespace_path_template"]
-          route_patterns << default_registry + config["namespace_path_template"]
-        end
-        if config["version_path_template"]
-          route_patterns << default_registry + config["version_path_template"]
-        end
-        if config["namespace_version_path_template"]
-          route_patterns << default_registry + config["namespace_version_path_template"]
-        end
-      end
-      # Fall back to legacy route_patterns if available
-      route_patterns = config["route_patterns"] if route_patterns.empty? && config["route_patterns"]
+      # Use route_patterns directly from our extended registry config
+      route_patterns = config["route_patterns"] || []
       
       # Build reverse regex from template or use legacy format
       reverse_regex = nil

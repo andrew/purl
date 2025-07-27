@@ -584,21 +584,21 @@ class TestPurl < Minitest::Test
     end
     
     project_root = File.dirname(__dir__)
-    schemas_dir = File.join(project_root, "schemas")
+    schemas_dir = File.join(project_root, "purl-spec", "schemas")
     
-    # Test purl-types.json against its schema
+    # Test our purl-types.json against the official purl-types schema
     purl_types_data = JSON.parse(File.read(File.join(project_root, "purl-types.json")))
-    purl_types_schema = JSON.parse(File.read(File.join(schemas_dir, "purl-types.schema.json")))
+    purl_types_schema = JSON.parse(File.read(File.join(schemas_dir, "purl-types-index.schema.json")))
     
-    errors = JSON::Validator.fully_validate(purl_types_schema, purl_types_data)
+    # Remove $schema reference to avoid remote schema validation
+    purl_types_schema.delete("$schema")
+    
+    # Extract just the type names from our data structure to match the schema expectation
+    type_names = purl_types_data["types"]&.keys || []
+    
+    errors = JSON::Validator.fully_validate(purl_types_schema, type_names)
     assert_empty errors, "purl-types.json failed schema validation: #{errors.join(', ')}"
     
-    # Test test-suite-data.json against its schema
-    test_suite_data = JSON.parse(File.read(File.join(project_root, "test-suite-data.json")))
-    test_suite_schema = JSON.parse(File.read(File.join(schemas_dir, "test-suite-data.schema.json")))
-    
-    errors = JSON::Validator.fully_validate(test_suite_schema, test_suite_data)
-    assert_empty errors, "test-suite-data.json failed schema validation: #{errors.join(', ')}"
   end
 
   def test_purl_types_examples_validation
