@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-07-27
+
+### Added
+- Default registry URLs for 10 additional package types:
+  - `golang`: https://pkg.go.dev (Go package discovery site)
+  - `luarocks`: https://luarocks.org (Lua package repository)
+  - `clojars`: https://clojars.org (Clojure package repository)
+  - `elm`: https://package.elm-lang.org (Elm package catalog)
+  - `deno`: https://deno.land (Deno module registry)
+  - `homebrew`: https://formulae.brew.sh (Homebrew package browser)
+  - `bioconductor`: https://bioconductor.org (R bioinformatics packages)
+  - `huggingface`: https://huggingface.co (Machine learning models)
+  - `swift`: https://swiftpackageindex.com (Swift package index)
+  - `conan`: https://conan.io/center (C/C++ package center)
+
+### Enhanced
+- Registry configuration support for newly added package types
+- Updated test suite to validate all new default registries
+- Improved package type coverage with comprehensive registry URL mapping
+
+### Configuration
+- Updated `purl-types.json` to version 1.2.0 with enhanced registry configurations
+- Added specialized registry handling for Go's unique import path structure
+
 ## [1.1.2] - 2025-07-25
 
 ### Added

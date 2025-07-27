@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Official PURL types with registry configurations",
   "source": "https://github.com/package-url/purl-spec",
   "last_updated": "2025-07-27",
