@@ -286,12 +286,23 @@ class TestPurl < Minitest::Test
     assert_equal "https://hub.docker.com", Purl.default_registry("docker")
     assert_equal "https://github.com", Purl.default_registry("github")
     assert_equal "https://bitbucket.org", Purl.default_registry("bitbucket")
+    assert_equal "https://pkg.go.dev", Purl.default_registry("golang")
+    assert_equal "https://luarocks.org", Purl.default_registry("luarocks")
+    assert_equal "https://clojars.org", Purl.default_registry("clojars")
+    assert_equal "https://package.elm-lang.org", Purl.default_registry("elm")
+    assert_equal "https://deno.land", Purl.default_registry("deno")
+    assert_equal "https://formulae.brew.sh", Purl.default_registry("homebrew")
+    assert_equal "https://bioconductor.org", Purl.default_registry("bioconductor")
+    assert_equal "https://huggingface.co", Purl.default_registry("huggingface")
+    assert_equal "https://swiftpackageindex.com", Purl.default_registry("swift")
+    assert_equal "https://conan.io/center", Purl.default_registry("conan")
     
     # Test types without default registries
-    assert_nil Purl.default_registry("golang")
     assert_nil Purl.default_registry("generic")
     assert_nil Purl.default_registry("alpm")
-    assert_nil Purl.default_registry("swift")
+    assert_nil Purl.default_registry("apk")
+    assert_nil Purl.default_registry("deb")
+    assert_nil Purl.default_registry("rpm")
     
     # Test unknown type
     assert_nil Purl.default_registry("unknown")

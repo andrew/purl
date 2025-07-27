@@ -103,12 +103,23 @@
     },
     "conan": {
       "description": "Conan C/C++ packages. The purl is designed to closely resemble the Conan-native <package-name>/<package-version>@<user>/<channel> syntax for package references as specified in https://docs.conan.io/en/1.46/cheatsheet.html#package-terminology",
-      "default_registry": null,
+      "default_registry": "https://conan.io/center",
       "examples": [
         "pkg:conan/openssl@3.0.3",
         "pkg:conan/openssl.org/openssl@3.0.3?user=bincrafters&channel=stable",
         "pkg:conan/openssl.org/openssl@3.0.3?arch=x86_64&build_type=Debug&compiler=Visual%20Studio&compiler.runtime=MDd&compiler.version=16&os=Windows&shared=True&rrev=93a82349c31917d2d674d22065c7a9ef9f380c8e&prev=b429db8a0e324114c25ec387bfd8281f330d7c5c"
-      ]
+      ],
+      "registry_config": {
+        "base_url": "https://conan.io/center/recipes",
+        "route_patterns": [
+          "https://conan.io/center/recipes/:name"
+        ],
+        "reverse_regex": "^https://conan\\.io/center/recipes/([^/?#]+)",
+        "components": {
+          "namespace": false,
+          "version_in_url": false
+        }
+      }
     },
     "conda": {
       "description": "conda is for Conda packages",
@@ -221,12 +232,26 @@
     },
     "golang": {
       "description": "Go packages",
-      "default_registry": null,
+      "default_registry": "https://pkg.go.dev",
       "examples": [
         "pkg:golang/github.com/gorilla/context@234fd47e07d1004f0aed9c",
         "pkg:golang/google.golang.org/genproto#googleapis/api/annotations",
         "pkg:golang/github.com/gorilla/context@234fd47e07d1004f0aed9c#api"
-      ]
+      ],
+      "registry_config": {
+        "base_url": "https://pkg.go.dev",
+        "route_patterns": [
+          "https://pkg.go.dev/:namespace/:name",
+          "https://pkg.go.dev/:full_path"
+        ],
+        "reverse_regex": "^https://pkg\\.go\\.dev/(.+)",
+        "components": {
+          "namespace": true,
+          "namespace_required": true,
+          "version_in_url": false,
+          "special_handling": "golang_import_path"
+        }
+      }
     },
     "hackage": {
       "description": "Haskell packages",
@@ -272,20 +297,46 @@
     },
     "huggingface": {
       "description": "Hugging Face ML models",
-      "default_registry": null,
+      "default_registry": "https://huggingface.co",
       "examples": [
         "pkg:huggingface/distilbert-base-uncased@043235d6088ecd3dd5fb5ca3592b6913fd516027",
         "pkg:huggingface/microsoft/deberta-v3-base@559062ad13d311b87b2c455e67dcd5f1c8f65111?repository_url=https://hub-ci.huggingface.co"
-      ]
+      ],
+      "registry_config": {
+        "base_url": "https://huggingface.co",
+        "route_patterns": [
+          "https://huggingface.co/:namespace/:name",
+          "https://huggingface.co/:name"
+        ],
+        "reverse_regex": "^https://huggingface\\.co/(?:([^/?#]+)/)?([^/?#]+)",
+        "components": {
+          "namespace": true,
+          "namespace_required": false,
+          "version_in_url": false
+        }
+      }
     },
     "luarocks": {
       "description": "Lua packages installed with LuaRocks",
-      "default_registry": null,
+      "default_registry": "https://luarocks.org",
       "examples": [
         "pkg:luarocks/luasocket@3.1.0-1",
         "pkg:luarocks/hisham/luafilesystem@1.8.0-1",
         "pkg:luarocks/username/packagename@0.1.0-1?repository_url=https://example.com/private_rocks_server/"
-      ]
+      ],
+      "registry_config": {
+        "base_url": "https://luarocks.org/modules",
+        "route_patterns": [
+          "https://luarocks.org/modules/:namespace/:name",
+          "https://luarocks.org/modules/:name"
+        ],
+        "reverse_regex": "^https://luarocks\\.org/modules/(?:([^/?#]+)/)?([^/?#]+)",
+        "components": {
+          "namespace": true,
+          "namespace_required": false,
+          "version_in_url": false
+        }
+      }
     },
     "maven": {
       "description": "PURL type for Maven JARs and related artifacts.",
@@ -446,7 +497,7 @@
     },
     "swift": {
       "description": "Swift packages",
-      "default_registry": null,
+      "default_registry": "https://swiftpackageindex.com",
       "examples": [
         "pkg:swift/github.com/Alamofire/Alamofire@5.6.4",
         "pkg:swift/github.com/apple/swift-package-manager@1.7.0"
@@ -466,7 +517,7 @@
     },
     "clojars": {
       "description": "Clojars packages",
-      "default_registry": null,
+      "default_registry": "https://clojars.org",
       "examples": [
         "pkg:clojars/org.clojure/clojure@1.11.1",
         "pkg:clojars/ring/ring-core@1.9.5"
@@ -487,7 +538,7 @@
     },
     "elm": {
       "description": "Elm packages",
-      "default_registry": null,
+      "default_registry": "https://package.elm-lang.org",
       "examples": [
         "pkg:elm/elm/http@2.0.0",
         "pkg:elm/elm-community/json-extra@4.3.0"
@@ -509,7 +560,7 @@
     },
     "deno": {
       "description": "Deno packages",
-      "default_registry": null,
+      "default_registry": "https://deno.land",
       "examples": [
         "pkg:deno/oak@12.0.0",
         "pkg:deno/std@0.177.0#http/server"
@@ -530,7 +581,7 @@
     },
     "homebrew": {
       "description": "Homebrew packages",
-      "default_registry": null,
+      "default_registry": "https://formulae.brew.sh",
       "examples": [
         "pkg:homebrew/wget@1.21.3",
         "pkg:homebrew/node@19.6.0"
@@ -549,7 +600,7 @@
     },
     "bioconductor": {
       "description": "Bioconductor packages",
-      "default_registry": null,
+      "default_registry": "https://bioconductor.org",
       "examples": [
         "pkg:bioconductor/IRanges@2.28.0",
         "pkg:bioconductor/GenomicRanges@1.46.1"
