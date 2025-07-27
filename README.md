@@ -385,6 +385,25 @@ rake spec:types
 rake spec:verify_types
 ```
 
+### Testing Against Official Specification
+
+This library includes the official [purl-spec](https://github.com/package-url/purl-spec) repository as a git submodule for testing and validation:
+
+```bash
+# Initialize submodule (first time only)
+git submodule update --init --recursive
+
+# Update submodule to latest spec
+git submodule update --remote purl-spec
+```
+
+The tests use files from the submodule to:
+- **Schema validation**: Validate our `purl-types.json` against the official schema in `purl-spec/schemas/`
+- **Type compliance**: Ensure our supported types match the official types in `purl-spec/types/`
+- **Test data**: Access official test cases and examples from `purl-spec/tests/`
+
+The submodule is automatically updated weekly via Dependabot, ensuring tests stay current with the latest specification changes. When the submodule updates, you can review and merge the PR to adopt new spec requirements.
+
 ### Rake Tasks
 
 - `rake spec:update` - Fetch latest test cases from official PURL spec repository
