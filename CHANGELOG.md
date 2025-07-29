@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-07-29
+
+### Added
+- RFC 6570 URI templates for registry URL generation
+- Advanced URL templating capabilities for dynamic registry URL construction
+
+### Enhanced
+- Registry URL generation now supports more flexible URL patterns
+- Improved templating system for custom registry configurations
+
 ## [1.2.0] - 2025-07-27
 
 ### Added
