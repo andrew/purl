@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "addressable/template"
+
 module Purl
   class RegistryURL
     # Load registry patterns from JSON configuration
@@ -27,8 +29,7 @@ module Purl
       # Get the default registry for this type from the extended config
       default_registry = type_config["default_registry"]
       
-      # Use route_patterns directly from our extended registry config
-      route_patterns = config["route_patterns"] || []
+      # Route patterns are replaced by URI templates
       
       # Build reverse regex from template or use legacy format
       reverse_regex = nil
@@ -45,10 +46,13 @@ module Purl
       
       {
         base_url: config["base_url"] || (default_registry ? default_registry + config["path_template"]&.split('/:').first : nil),
-        route_patterns: route_patterns,
         reverse_regex: reverse_regex,
         pattern: build_generation_lambda(type, config, default_registry),
-        reverse_parser: reverse_regex ? build_reverse_parser(type, config) : nil
+        reverse_parser: reverse_regex ? build_reverse_parser(type, config) : nil,
+        uri_template: config["uri_template"] ? Addressable::Template.new(config["uri_template"]) : nil,
+        uri_template_no_namespace: config["uri_template_no_namespace"] ? Addressable::Template.new(config["uri_template_no_namespace"]) : nil,
+        uri_template_with_version: config["uri_template_with_version"] ? Addressable::Template.new(config["uri_template_with_version"]) : nil,
+        uri_template_with_version_no_namespace: config["uri_template_with_version_no_namespace"] ? Addressable::Template.new(config["uri_template_with_version_no_namespace"]) : nil
       }
     end
 
@@ -376,17 +380,40 @@ module Purl
       pattern_config = REGISTRY_PATTERNS[type.to_s.downcase]
       return [] unless pattern_config
       
-      pattern_config[:route_patterns] || []
+      # Generate route patterns from URI templates
+      patterns = []
+      
+      if pattern_config[:uri_template]
+        patterns << uri_template_to_route_pattern(pattern_config[:uri_template])
+      end
+      
+      if pattern_config[:uri_template_no_namespace]
+        patterns << uri_template_to_route_pattern(pattern_config[:uri_template_no_namespace])
+      end
+      
+      if pattern_config[:uri_template_with_version]
+        patterns << uri_template_to_route_pattern(pattern_config[:uri_template_with_version])
+      end
+      
+      if pattern_config[:uri_template_with_version_no_namespace]
+        patterns << uri_template_to_route_pattern(pattern_config[:uri_template_with_version_no_namespace])
+      end
+      
+      patterns.uniq
     end
 
     def self.all_route_patterns
       result = {}
       REGISTRY_PATTERNS.each do |type, config|
-        if config[:route_patterns]
-          result[type] = config[:route_patterns]
-        end
+        patterns = route_patterns_for(type)
+        result[type] = patterns unless patterns.empty?
       end
       result
+    end
+    
+    private_class_method def self.uri_template_to_route_pattern(template)
+      # Convert URI template format {variable} to route pattern format :variable
+      template.pattern.gsub(/\{([^}]+)\}/, ':\1')
     end
 
     def initialize(purl)
@@ -408,8 +435,12 @@ module Purl
         if base_url
           # Use custom base URL with the same URL structure
           generate_with_custom_base_url(base_url, pattern_config)
+        elsif pattern_config[:uri_template]
+          # Use URI template if available
+          template = select_uri_template(pattern_config, include_version: false)
+          generate_with_uri_template(template)
         else
-          # Use default base URL
+          # Fall back to legacy lambda pattern
           pattern_config[:pattern].call(@purl)
         end
       rescue MissingRegistryInfoError
@@ -420,26 +451,120 @@ module Purl
     end
 
     def generate_with_version(base_url: nil)
-      registry_url = generate(base_url: base_url)
+      return generate(base_url: base_url) unless @purl.version
       
-      case @purl.type.downcase
-      when "npm"
-        @purl.version ? "#{registry_url}/v/#{@purl.version}" : registry_url
-      when "pypi"
-        @purl.version ? "#{registry_url}#{@purl.version}/" : registry_url
-      when "gem"
-        @purl.version ? "#{registry_url}/versions/#{@purl.version}" : registry_url
-      when "maven"
-        @purl.version ? "#{registry_url}/#{@purl.version}" : registry_url
-      when "nuget"
-        @purl.version ? "#{registry_url}/#{@purl.version}" : registry_url
+      pattern_config = REGISTRY_PATTERNS[@purl.type.downcase]
+      
+      if base_url
+        # Use custom base URL with version
+        generate_with_custom_base_url_and_version(base_url, pattern_config)
+      elsif pattern_config[:uri_template_with_version] || pattern_config[:uri_template]
+        # Use version-specific URI template if available
+        template = select_uri_template(pattern_config, include_version: true)
+        generate_with_uri_template(template, include_version: true)
       else
-        # For other types, just return the base URL since version-specific URLs vary
-        registry_url
+        # Fall back to legacy version handling
+        registry_url = generate(base_url: base_url)
+        
+        case @purl.type.downcase
+        when "npm"
+          "#{registry_url}/v/#{@purl.version}"
+        when "pypi"
+          "#{registry_url}#{@purl.version}/"
+        when "gem"
+          "#{registry_url}/versions/#{@purl.version}"
+        when "maven"
+          "#{registry_url}/#{@purl.version}"
+        when "nuget"
+          "#{registry_url}/#{@purl.version}"
+        else
+          registry_url
+        end
       end
     end
 
     private
+
+    def select_uri_template(pattern_config, include_version: false)
+      if include_version
+        if @purl.namespace && pattern_config[:uri_template_with_version]
+          pattern_config[:uri_template_with_version]
+        elsif !@purl.namespace && pattern_config[:uri_template_with_version_no_namespace]
+          pattern_config[:uri_template_with_version_no_namespace]
+        elsif pattern_config[:uri_template_with_version]
+          pattern_config[:uri_template_with_version]
+        elsif @purl.namespace && pattern_config[:uri_template]
+          pattern_config[:uri_template]
+        elsif !@purl.namespace && pattern_config[:uri_template_no_namespace]
+          pattern_config[:uri_template_no_namespace]
+        else
+          pattern_config[:uri_template]
+        end
+      else
+        if @purl.namespace && pattern_config[:uri_template]
+          pattern_config[:uri_template]
+        elsif !@purl.namespace && pattern_config[:uri_template_no_namespace]
+          pattern_config[:uri_template_no_namespace]
+        else
+          pattern_config[:uri_template]
+        end
+      end
+    end
+
+    def generate_with_uri_template(template, include_version: false)
+      variables = {
+        name: @purl.name
+      }
+      
+      # Add namespace if present and required
+      if @purl.namespace
+        variables[:namespace] = @purl.namespace
+      end
+      
+      # Add version if requested and present
+      if include_version && @purl.version
+        variables[:version] = @purl.version
+      end
+      
+      # Handle namespace requirements based on package type
+      case @purl.type.downcase
+      when "composer", "maven", "swift", "elm"
+        unless @purl.namespace
+          raise MissingRegistryInfoError.new(
+            "#{@purl.type.capitalize} packages require a namespace",
+            type: @purl.type,
+            missing: "namespace"
+          )
+        end
+      end
+      
+      # Build the URL manually to avoid encoding issues with special characters like @
+      result = template.pattern
+      
+      variables.each do |key, value|
+        result = result.gsub("{#{key}}", value.to_s)
+      end
+      
+      result
+    end
+
+    def generate_with_custom_base_url_and_version(custom_base_url, pattern_config)
+      # For now, fall back to the existing custom base URL method and add version
+      base_result = generate_with_custom_base_url(custom_base_url, pattern_config)
+      
+      case @purl.type.downcase
+      when "npm"
+        "#{base_result}/v/#{@purl.version}"
+      when "pypi"
+        "#{base_result}#{@purl.version}/"
+      when "gem"
+        "#{base_result}/versions/#{@purl.version}"
+      when "maven", "nuget"
+        "#{base_result}/#{@purl.version}"
+      else
+        base_result
+      end
+    end
 
     def generate_with_custom_base_url(custom_base_url, pattern_config)
       

@@ -31,4 +31,7 @@ It supports 37 package types (32 official + 5 additional ecosystems) and is full
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+
+  # Dependencies
+  spec.add_dependency "addressable", "~> 2.8"
 end

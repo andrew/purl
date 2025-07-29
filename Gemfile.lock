@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     purl (1.2.0)
+      addressable (~> 2.8)
 
 GEM
   remote: https://rubygems.org/
