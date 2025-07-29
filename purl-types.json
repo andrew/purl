@@ -50,10 +50,8 @@
       ],
       "registry_config": {
         "base_url": "https://crates.io/crates",
-        "route_patterns": [
-          "https://crates.io/crates/:name"
-        ],
         "reverse_regex": "^https://crates\\.io/crates/([^/?#]+)",
+        "uri_template": "https://crates.io/crates/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -70,10 +68,8 @@
       ],
       "registry_config": {
         "base_url": "https://cocoapods.org/pods",
-        "route_patterns": [
-          "https://cocoapods.org/pods/:name"
-        ],
         "reverse_regex": "^https://cocoapods\\.org/pods/([^/?#]+)",
+        "uri_template": "https://cocoapods.org/pods/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -90,10 +86,8 @@
       ],
       "registry_config": {
         "base_url": "https://packagist.org/packages",
-        "route_patterns": [
-          "https://packagist.org/packages/:namespace/:name"
-        ],
         "reverse_regex": "^https://packagist\\.org/packages/([^/?#]+)/([^/?#]+)",
+        "uri_template": "https://packagist.org/packages/{namespace}/{name}",
         "components": {
           "namespace": true,
           "namespace_required": true,
@@ -111,10 +105,8 @@
       ],
       "registry_config": {
         "base_url": "https://conan.io/center/recipes",
-        "route_patterns": [
-          "https://conan.io/center/recipes/:name"
-        ],
         "reverse_regex": "^https://conan\\.io/center/recipes/([^/?#]+)",
+        "uri_template": "https://conan.io/center/recipes/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -131,10 +123,8 @@
       ],
       "registry_config": {
         "base_url": "https://anaconda.org/conda-forge",
-        "route_patterns": [
-          "https://anaconda.org/conda-forge/:name"
-        ],
         "reverse_regex": "^https://anaconda\\.org/conda-forge/([^/?#]+)",
+        "uri_template": "https://anaconda.org/conda-forge/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -151,10 +141,8 @@
       ],
       "registry_config": {
         "base_url": "https://metacpan.org/dist",
-        "route_patterns": [
-          "https://metacpan.org/dist/:name"
-        ],
         "reverse_regex": "^https://metacpan\\.org/dist/([^/?#]+)",
+        "uri_template": "https://metacpan.org/dist/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -200,11 +188,9 @@
       ],
       "registry_config": {
         "base_url": "https://rubygems.org/gems",
-        "route_patterns": [
-          "https://rubygems.org/gems/:name",
-          "https://rubygems.org/gems/:name/versions/:version"
-        ],
         "reverse_regex": "^https://rubygems\\.org/gems/([^/?#]+)(?:/versions/([^/?#]+))?",
+        "uri_template": "https://rubygems.org/gems/{name}",
+        "uri_template_with_version": "https://rubygems.org/gems/{name}/versions/{version}",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -240,11 +226,8 @@
       ],
       "registry_config": {
         "base_url": "https://pkg.go.dev",
-        "route_patterns": [
-          "https://pkg.go.dev/:namespace/:name",
-          "https://pkg.go.dev/:full_path"
-        ],
         "reverse_regex": "^https://pkg\\.go\\.dev/(.+)",
+        "uri_template": "https://pkg.go.dev/{namespace}/{name}",
         "components": {
           "namespace": true,
           "namespace_required": true,
@@ -263,11 +246,9 @@
       ],
       "registry_config": {
         "base_url": "https://hackage.haskell.org/package",
-        "route_patterns": [
-          "https://hackage.haskell.org/package/:name",
-          "https://hackage.haskell.org/package/:name-:version"
-        ],
         "reverse_regex": "^https://hackage\\.haskell\\.org/package/([^/?#-]+)(?:-([^/?#]+))?",
+        "uri_template": "https://hackage.haskell.org/package/{name}",
+        "uri_template_with_version": "https://hackage.haskell.org/package/{name}-{version}",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -285,10 +266,8 @@
       ],
       "registry_config": {
         "base_url": "https://hex.pm/packages",
-        "route_patterns": [
-          "https://hex.pm/packages/:name"
-        ],
         "reverse_regex": "^https://hex\\.pm/packages/([^/?#]+)",
+        "uri_template": "https://hex.pm/packages/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -304,11 +283,9 @@
       ],
       "registry_config": {
         "base_url": "https://huggingface.co",
-        "route_patterns": [
-          "https://huggingface.co/:namespace/:name",
-          "https://huggingface.co/:name"
-        ],
         "reverse_regex": "^https://huggingface\\.co/(?:([^/?#]+)/)?([^/?#]+)",
+        "uri_template": "https://huggingface.co/{namespace}/{name}",
+        "uri_template_no_namespace": "https://huggingface.co/{name}",
         "components": {
           "namespace": true,
           "namespace_required": false,
@@ -326,11 +303,9 @@
       ],
       "registry_config": {
         "base_url": "https://luarocks.org/modules",
-        "route_patterns": [
-          "https://luarocks.org/modules/:namespace/:name",
-          "https://luarocks.org/modules/:name"
-        ],
         "reverse_regex": "^https://luarocks\\.org/modules/(?:([^/?#]+)/)?([^/?#]+)",
+        "uri_template": "https://luarocks.org/modules/{namespace}/{name}",
+        "uri_template_no_namespace": "https://luarocks.org/modules/{name}",
         "components": {
           "namespace": true,
           "namespace_required": false,
@@ -348,11 +323,9 @@
       ],
       "registry_config": {
         "base_url": "https://mvnrepository.com/artifact",
-        "route_patterns": [
-          "https://mvnrepository.com/artifact/:namespace/:name",
-          "https://mvnrepository.com/artifact/:namespace/:name/:version"
-        ],
         "reverse_regex": "^https://mvnrepository\\.com/artifact/([^/?#]+)/([^/?#]+)(?:/([^/?#]+))?",
+        "uri_template": "https://mvnrepository.com/artifact/{namespace}/{name}",
+        "uri_template_with_version": "https://mvnrepository.com/artifact/{namespace}/{name}/{version}",
         "components": {
           "namespace": true,
           "namespace_required": true,
@@ -379,13 +352,11 @@
       ],
       "registry_config": {
         "base_url": "https://www.npmjs.com/package",
-        "route_patterns": [
-          "https://www.npmjs.com/package/:namespace/:name",
-          "https://www.npmjs.com/package/:name",
-          "https://www.npmjs.com/package/:namespace/:name/v/:version",
-          "https://www.npmjs.com/package/:name/v/:version"
-        ],
         "reverse_regex": "^https://(?:www\\.)?npmjs\\.com/package/(?:(@[^/]+)/)?([^/?#]+)(?:/v/([^/?#]+))?",
+        "uri_template": "https://www.npmjs.com/package/{namespace}/{name}",
+        "uri_template_no_namespace": "https://www.npmjs.com/package/{name}",
+        "uri_template_with_version": "https://www.npmjs.com/package/{namespace}/{name}/v/{version}",
+        "uri_template_with_version_no_namespace": "https://www.npmjs.com/package/{name}/v/{version}",
         "components": {
           "namespace": true,
           "namespace_required": false,
@@ -405,11 +376,9 @@
       ],
       "registry_config": {
         "base_url": "https://www.nuget.org/packages",
-        "route_patterns": [
-          "https://www.nuget.org/packages/:name",
-          "https://www.nuget.org/packages/:name/:version"
-        ],
         "reverse_regex": "^https://(?:www\\.)?nuget\\.org/packages/([^/?#]+)(?:/([^/?#]+))?",
+        "uri_template": "https://www.nuget.org/packages/{name}",
+        "uri_template_with_version": "https://www.nuget.org/packages/{name}/{version}",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -437,10 +406,8 @@
       ],
       "registry_config": {
         "base_url": "https://pub.dev/packages",
-        "route_patterns": [
-          "https://pub.dev/packages/:name"
-        ],
         "reverse_regex": "^https://pub\\.dev/packages/([^/?#]+)",
+        "uri_template": "https://pub.dev/packages/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -457,11 +424,9 @@
       ],
       "registry_config": {
         "base_url": "https://pypi.org/project",
-        "route_patterns": [
-          "https://pypi.org/project/:name/",
-          "https://pypi.org/project/:name/:version/"
-        ],
         "reverse_regex": "^https://pypi\\.org/project/([^/?#]+)/?(?:([^/?#]+)/?)?",
+        "uri_template": "https://pypi.org/project/{name}/",
+        "uri_template_with_version": "https://pypi.org/project/{name}/{version}/",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -504,10 +469,8 @@
       ],
       "registry_config": {
         "base_url": "https://swiftpackageindex.com",
-        "route_patterns": [
-          "https://swiftpackageindex.com/:namespace/:name"
-        ],
         "reverse_regex": "^https://swiftpackageindex\\.com/([^/?#]+)/([^/?#]+)",
+        "uri_template": "https://swiftpackageindex.com/{namespace}/{name}",
         "components": {
           "namespace": true,
           "namespace_required": true,
@@ -524,11 +487,9 @@
       ],
       "registry_config": {
         "base_url": "https://clojars.org",
-        "route_patterns": [
-          "https://clojars.org/:namespace/:name",
-          "https://clojars.org/:name"
-        ],
         "reverse_regex": "^https://clojars\\.org/(?:([^/?#]+)/)?([^/?#]+)",
+        "uri_template": "https://clojars.org/{namespace}/{name}",
+        "uri_template_no_namespace": "https://clojars.org/{name}",
         "components": {
           "namespace": true,
           "namespace_required": false,
@@ -545,11 +506,9 @@
       ],
       "registry_config": {
         "base_url": "https://package.elm-lang.org/packages",
-        "route_patterns": [
-          "https://package.elm-lang.org/packages/:namespace/:name/latest",
-          "https://package.elm-lang.org/packages/:namespace/:name/:version"
-        ],
         "reverse_regex": "^https://package\\.elm-lang\\.org/packages/([^/?#]+)/([^/?#]+)(?:/([^/?#]+))?",
+        "uri_template": "https://package.elm-lang.org/packages/{namespace}/{name}/latest",
+        "uri_template_with_version": "https://package.elm-lang.org/packages/{namespace}/{name}/{version}",
         "components": {
           "namespace": true,
           "namespace_required": true,
@@ -567,11 +526,9 @@
       ],
       "registry_config": {
         "base_url": "https://deno.land/x",
-        "route_patterns": [
-          "https://deno.land/x/:name",
-          "https://deno.land/x/:name@:version"
-        ],
         "reverse_regex": "^https://deno\\.land/x/([^/?#@]+)(?:@([^/?#]+))?",
+        "uri_template": "https://deno.land/x/{name}",
+        "uri_template_with_version": "https://deno.land/x/{name}@{version}",
         "components": {
           "namespace": false,
           "version_in_url": true,
@@ -588,10 +545,8 @@
       ],
       "registry_config": {
         "base_url": "https://formulae.brew.sh/formula",
-        "route_patterns": [
-          "https://formulae.brew.sh/formula/:name"
-        ],
         "reverse_regex": "^https://formulae\\.brew\\.sh/formula/([^/?#]+)",
+        "uri_template": "https://formulae.brew.sh/formula/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
@@ -607,10 +562,8 @@
       ],
       "registry_config": {
         "base_url": "https://bioconductor.org/packages",
-        "route_patterns": [
-          "https://bioconductor.org/packages/:name"
-        ],
         "reverse_regex": "^https://bioconductor\\.org/packages/([^/?#]+)",
+        "uri_template": "https://bioconductor.org/packages/{name}",
         "components": {
           "namespace": false,
           "version_in_url": false
