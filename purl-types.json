@@ -79,6 +79,7 @@
     "composer": {
       "description": "Composer PHP packages",
       "default_registry": "https://packagist.org",
+      "namespace_requirement": "required",
       "examples": [
         "pkg:composer/symfony/console@6.1.7",
         "pkg:composer/laravel/framework@9.42.2",
@@ -152,6 +153,7 @@
     "cran": {
       "description": "CRAN R packages",
       "default_registry": "https://cran.r-project.org",
+      "namespace_requirement": "prohibited",
       "examples": [
         "pkg:cran/ggplot2@3.4.0",
         "pkg:cran/dplyr@1.0.10",
@@ -181,6 +183,7 @@
     "gem": {
       "description": "RubyGems",
       "default_registry": "https://rubygems.org",
+      "namespace_requirement": "prohibited",
       "examples": [
         "pkg:gem/ruby-advisory-db-check@0.12.4",
         "pkg:gem/rails@7.0.4",
@@ -278,7 +281,7 @@
       "description": "Hugging Face ML models",
       "default_registry": "https://huggingface.co",
       "examples": [
-        "pkg:huggingface/distilbert-base-uncased@043235d6088ecd3dd5fb5ca3592b6913fd516027",
+        "pkg:huggingface/huggingface/distilbert-base-uncased@043235d6088ecd3dd5fb5ca3592b6913fd516027",
         "pkg:huggingface/microsoft/deberta-v3-base@559062ad13d311b87b2c455e67dcd5f1c8f65111?repository_url=https://hub-ci.huggingface.co"
       ],
       "registry_config": {
@@ -316,6 +319,7 @@
     "maven": {
       "description": "PURL type for Maven JARs and related artifacts.",
       "default_registry": "https://repo.maven.apache.org/maven2",
+      "namespace_requirement": "required", 
       "examples": [
         "pkg:maven/org.apache.commons/commons-lang3@3.12.0",
         "pkg:maven/junit/junit@4.13.2",
@@ -345,6 +349,7 @@
     "npm": {
       "description": "PURL type for npm packages.",
       "default_registry": "https://registry.npmjs.org",
+      "namespace_requirement": "optional",
       "examples": [
         "pkg:npm/@babel/core@7.20.0",
         "pkg:npm/lodash@4.17.21",
@@ -448,7 +453,7 @@
       "default_registry": null,
       "examples": [
         "pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25",
-        "pkg:rpm/centerim@4.22.10-1.el6?arch=i686&epoch=1&distro=fedora-25"
+        "pkg:rpm/fedora/centerim@4.22.10-1.el6?arch=i686&epoch=1&distro=fedora-25"
       ]
     },
     "swid": {
@@ -463,6 +468,7 @@
     "swift": {
       "description": "Swift packages",
       "default_registry": "https://swiftpackageindex.com",
+      "namespace_requirement": "required",
       "examples": [
         "pkg:swift/github.com/Alamofire/Alamofire@5.6.4",
         "pkg:swift/github.com/apple/swift-package-manager@1.7.0"

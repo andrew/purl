@@ -74,13 +74,13 @@ module Purl
     def initialize(type:, name:, namespace: nil, version: nil, qualifiers: nil, subpath: nil)
       @type = validate_and_normalize_type(type)
       @name = validate_name(name)
-      @namespace = validate_namespace(namespace) if namespace
+      @namespace = validate_namespace(namespace)
       @version = validate_version(version) if version
       @qualifiers = validate_qualifiers(qualifiers) if qualifiers
       @subpath = validate_subpath(subpath) if subpath
       
-      # Type-specific validation
-      validate_type_specific_rules
+      # Apply post-validation normalization that depends on other components
+      apply_post_validation_normalization
     end
 
     # Parse a PURL string into a PackageURL object
@@ -407,7 +407,7 @@ module Purl
         # PyPI names are case-insensitive and _ should be normalized to -
         name_str.downcase.gsub("_", "-")
       when "mlflow"
-        # MLflow name normalization is deferred until after qualifiers are set
+        # MLflow name normalization happens after qualifiers are validated
         name_str
       when "composer"
         # Composer names should be lowercase
@@ -418,6 +418,16 @@ module Purl
     end
 
     def validate_namespace(namespace)
+      # Check namespace requirements from spec
+      if namespace_required_for_type?(@type) && namespace.nil?
+        raise ValidationError.new(
+          "#{@type.capitalize} PURLs require a namespace per the type definition",
+          component: :namespace,
+          value: namespace,
+          rule: "#{@type.downcase} packages need namespace"
+        )
+      end
+      
       return nil if namespace.nil?
       
       namespace_str = namespace.to_s.strip
@@ -516,111 +526,35 @@ module Purl
       subpath_str
     end
 
-    def validate_type_specific_rules
-      case @type.downcase
-      when "conan"
-        validate_conan_specific_rules
-      when "cran"
-        validate_cran_specific_rules
-      when "swift"
-        validate_swift_specific_rules
-      when "cpan"
-        validate_cpan_specific_rules
-      when "mlflow"
-        validate_mlflow_specific_rules
-      end
-    end
-
-    def validate_conan_specific_rules
-      # For conan packages, if a namespace is present WITHOUT any qualifiers at all, 
-      # it's ambiguous. However, any qualifiers (including build settings) make it unambiguous.
-      # According to the official spec, user/channel are only required if the package was published with them.
-      if @namespace && (@qualifiers.nil? || @qualifiers.empty?)
-        raise ValidationError.new(
-          "Conan PURLs with namespace require qualifiers to be unambiguous",
-          component: :qualifiers,
-          value: @qualifiers,
-          rule: "conan packages with namespace need qualifiers for disambiguation"
-        )
-      end
-      
-      # If channel qualifier is present without namespace, user qualifier is also needed (test case 31)
-      # But if namespace is present, channel alone can be valid (test case 29)
-      if @qualifiers && @qualifiers["channel"] && @qualifiers["user"].nil? && @namespace.nil?
-        raise ValidationError.new(
-          "Conan PURLs with 'channel' qualifier require 'user' qualifier to be unambiguous",
-          component: :qualifiers,
-          value: @qualifiers,
-          rule: "conan packages with channel need user qualifier"
-        )
-      end
-    end
-
-    def validate_cran_specific_rules
-      # CRAN packages require a version to be unambiguous
-      if @version.nil?
-        raise ValidationError.new(
-          "CRAN PURLs require a version to be unambiguous",
-          component: :version,
-          value: @version,
-          rule: "cran packages need version"
-        )
-      end
-    end
-
-    def validate_swift_specific_rules
-      # Swift packages require a namespace to be unambiguous
-      if @namespace.nil?
-        raise ValidationError.new(
-          "Swift PURLs require a namespace to be unambiguous",
-          component: :namespace,
-          value: @namespace,
-          rule: "swift packages need namespace"
-        )
-      end
-      
-      # Swift packages require a version to be unambiguous
-      if @version.nil?
-        raise ValidationError.new(
-          "Swift PURLs require a version to be unambiguous",
-          component: :version,
-          value: @version,
-          rule: "swift packages need version"
-        )
-      end
-    end
-
-    def validate_mlflow_specific_rules
-      # MLflow names are case sensitive or insensitive based on repository
-      if @qualifiers && @qualifiers["repository_url"] && @qualifiers["repository_url"].include?("azuredatabricks")
-        # Azure Databricks MLflow is case insensitive - normalize to lowercase
+    def apply_post_validation_normalization
+      # MLflow names are case sensitive or insensitive based on repository per spec
+      if @type&.downcase == "mlflow" && @qualifiers && @qualifiers["repository_url"] && @qualifiers["repository_url"].include?("azuredatabricks")
+        # Databricks MLflow is case insensitive - normalize to lowercase per spec
         @name = @name.downcase
       end
-      # Other MLflow repositories are case sensitive - no normalization needed
+      # Other MLflow repositories (like Azure ML) are case sensitive - no normalization needed
     end
 
-    def validate_cpan_specific_rules
-      # CPAN has complex rules about module vs distribution names
-      # These test cases are checking for specific invalid patterns
+    def namespace_required_for_type?(type)
+      return false unless type
       
-      # Case 51: "Perl-Version" should be invalid (module name like distribution name)
-      if @name == "Perl-Version"
-        raise ValidationError.new(
-          "CPAN module name 'Perl-Version' conflicts with distribution naming",
-          component: :name,
-          value: @name,
-          rule: "cpan module vs distribution name conflict"
-        )
-      end
+      # Read from purl-types.json (included in gem)
+      types_data = self.class.purl_types_data
+      type_config = types_data.dig("types", type.downcase)
+      return false unless type_config
       
-      # Case 52: namespace with distribution-like name should be invalid
-      if @namespace == "GDT" && @name == "URI::PackageURL"
-        raise ValidationError.new(
-          "CPAN distribution name 'GDT/URI::PackageURL' has invalid format",
-          component: :name,
-          value: "#{@namespace}/#{@name}",
-          rule: "cpan distribution vs module name conflict"
-        )
+      # Check namespace_requirement field
+      type_config["namespace_requirement"] == "required"
+    end
+
+    def self.purl_types_data
+      @purl_types_data ||= begin
+        require "json"
+        types_file = File.join(File.dirname(__FILE__), "..", "..", "purl-types.json")
+        JSON.parse(File.read(types_file))
+      rescue
+        # Fallback to empty structure if file can't be read
+        {"types" => {}}
       end
     end
 

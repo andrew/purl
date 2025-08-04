@@ -131,10 +131,15 @@ class TestPurl < Minitest::Test
   end
 
   def test_maven_requires_namespace
-    purl = Purl::PackageURL.new(type: "maven", name: "junit")
-    assert_raises(Purl::MissingRegistryInfoError) do
-      purl.registry_url
+    # Maven requires namespace per spec, so test that creation fails without it
+    assert_raises(Purl::ValidationError) do
+      Purl::PackageURL.new(type: "maven", name: "junit")
     end
+    
+    # Maven with namespace should work for registry URL generation
+    purl = Purl::PackageURL.new(type: "maven", namespace: "junit", name: "junit")
+    # Should be able to generate registry URL with namespace
+    assert purl.registry_url.include?("junit")
   end
 
   def test_supports_registry_url
@@ -217,13 +222,14 @@ class TestPurl < Minitest::Test
   end
 
   def test_from_registry_url_swift
-    # Swift packages require a version, so reverse parsing without version will fail validation
-    # This is expected behavior per the PURL spec for Swift
+    # Swift packages can be parsed without version now that we follow the PURL spec
     registry_url = "https://swiftpackageindex.com/apple/swift-package-manager"
+    purl = Purl.from_registry_url(registry_url)
     
-    assert_raises(Purl::ValidationError) do
-      Purl.from_registry_url(registry_url)
-    end
+    assert_equal "swift", purl.type
+    assert_equal "swift-package-manager", purl.name  
+    assert_equal "apple", purl.namespace
+    assert_nil purl.version
   end
 
   def test_from_registry_url_nuget_with_version
