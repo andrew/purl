@@ -1,0 +1,435 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require "json"
+require_relative "../lib/purl"
+
+class PurlCLI
+  def self.run(args = ARGV)
+    new.run(args)
+  end
+
+  def initialize
+    @json_output = false
+  end
+
+  def run(args)
+    if args.empty?
+      puts usage
+      exit 1
+    end
+
+    # Check for global --json flag
+    if args.include?("--json")
+      @json_output = true
+      args.delete("--json")
+    end
+
+    command = args.shift
+    case command
+    when "parse"
+      parse_command(args)
+    when "validate"
+      validate_command(args)
+    when "convert"
+      convert_command(args)
+    when "generate"
+      generate_command(args)
+    when "url"
+      url_command(args)
+    when "info"
+      info_command(args)
+    when "--help", "-h", "help"
+      puts usage
+      exit 0
+    when "--version", "-v"
+      puts Purl::VERSION
+      exit 0
+    else
+      puts "Unknown command: #{command}"
+      puts usage
+      exit 1
+    end
+  end
+
+  private
+
+  def usage
+    <<~USAGE
+      purl - Parse, validate, convert and generate Package URLs (PURLs)
+
+      Usage:
+        purl [--json] parse <purl-string>     Parse and display PURL components
+        purl [--json] validate <purl-string>  Validate a PURL (exit code indicates success)
+        purl [--json] convert <registry-url>  Convert registry URL to PURL
+        purl [--json] url <purl-string>       Convert PURL to registry URL
+        purl [--json] generate [options]      Generate PURL from components
+        purl [--json] info [type]             Show information about PURL types
+        purl --version                        Show version
+        purl --help                           Show this help
+
+      Global Options:
+        --json                                Output results in JSON format
+
+      Examples:
+        purl parse "pkg:gem/rails@7.0.0"
+        purl --json parse "pkg:gem/rails@7.0.0"
+        purl validate "pkg:npm/@babel/core@7.0.0"
+        purl convert "https://rubygems.org/gems/rails"
+        purl url "pkg:gem/rails@7.0.0"
+        purl generate --type gem --name rails --version 7.0.0
+        purl --json info gem
+    USAGE
+  end
+
+  def parse_command(args)
+    if args.empty?
+      output_error("PURL string required")
+      exit 1
+    end
+
+    purl_string = args[0]
+    
+    begin
+      purl = Purl.parse(purl_string)
+      
+      if @json_output
+        result = {
+          success: true,
+          purl: purl.to_s,
+          components: {
+            type: purl.type,
+            namespace: purl.namespace,
+            name: purl.name,
+            version: purl.version,
+            qualifiers: purl.qualifiers || {},
+            subpath: purl.subpath
+          }
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Valid PURL: #{purl.to_s}"
+        puts "Components:"
+        puts "  Type:       #{purl.type}"
+        puts "  Namespace:  #{purl.namespace || '(none)'}"
+        puts "  Name:       #{purl.name}"
+        puts "  Version:    #{purl.version || '(none)'}"
+        
+        if purl.qualifiers && !purl.qualifiers.empty?
+          puts "  Qualifiers:"
+          purl.qualifiers.each do |key, value|
+            puts "    #{key}: #{value}"
+          end
+        else
+          puts "  Qualifiers: (none)"
+        end
+        
+        puts "  Subpath:    #{purl.subpath || '(none)'}"
+      end
+    rescue Purl::Error => e
+      output_error("Error parsing PURL: #{e.message}")
+      exit 1
+    end
+  end
+
+  def validate_command(args)
+    if args.empty?
+      output_error("PURL string required")
+      exit 1
+    end
+
+    purl_string = args[0]
+    
+    begin
+      purl = Purl.parse(purl_string)
+      if @json_output
+        result = {
+          success: true,
+          valid: true,
+          purl: purl.to_s,
+          message: "Valid PURL"
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Valid PURL"
+      end
+      exit 0
+    rescue Purl::Error => e
+      if @json_output
+        result = {
+          success: false,
+          valid: false,
+          purl: purl_string,
+          error: e.message
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Invalid PURL: #{e.message}"
+      end
+      exit 1
+    end
+  end
+
+  def convert_command(args)
+    if args.empty?
+      output_error("Registry URL required")
+      exit 1
+    end
+
+    registry_url = args[0]
+    
+    begin
+      purl = Purl.from_registry_url(registry_url)
+      if @json_output
+        result = {
+          success: true,
+          registry_url: registry_url,
+          purl: purl.to_s,
+          components: {
+            type: purl.type,
+            namespace: purl.namespace,
+            name: purl.name,
+            version: purl.version,
+            qualifiers: purl.qualifiers || {},
+            subpath: purl.subpath
+          }
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts purl.to_s
+      end
+    rescue Purl::Error => e
+      if @json_output
+        result = {
+          success: false,
+          registry_url: registry_url,
+          error: e.message
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Error converting URL: #{e.message}"
+      end
+      exit 1
+    end
+  end
+
+  def url_command(args)
+    if args.empty?
+      output_error("PURL string required")
+      exit 1
+    end
+
+    purl_string = args[0]
+    
+    begin
+      purl = Purl.parse(purl_string)
+      
+      unless purl.supports_registry_url?
+        if @json_output
+          result = {
+            success: false,
+            purl: purl_string,
+            error: "Registry URL generation not supported for type '#{purl.type}'"
+          }
+          puts JSON.pretty_generate(result)
+        else
+          puts "Error: Registry URL generation not supported for type '#{purl.type}'"
+        end
+        exit 1
+      end
+      
+      registry_url = purl.registry_url
+      
+      if @json_output
+        result = {
+          success: true,
+          purl: purl.to_s,
+          registry_url: registry_url,
+          type: purl.type
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts registry_url
+      end
+    rescue Purl::Error => e
+      if @json_output
+        result = {
+          success: false,
+          purl: purl_string,
+          error: e.message
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Error: #{e.message}"
+      end
+      exit 1
+    end
+  end
+
+  def generate_command(args)
+    options = {}
+    OptionParser.new do |opts|
+      opts.banner = "Usage: purl generate [options]"
+      
+      opts.on("--type TYPE", "Package type (required)") do |v|
+        options[:type] = v
+      end
+      
+      opts.on("--name NAME", "Package name (required)") do |v|
+        options[:name] = v
+      end
+      
+      opts.on("--namespace NAMESPACE", "Package namespace") do |v|
+        options[:namespace] = v
+      end
+      
+      opts.on("--version VERSION", "Package version") do |v|
+        options[:version] = v
+      end
+      
+      opts.on("--qualifiers QUALIFIERS", "Qualifiers as key=value,key2=value2") do |v|
+        qualifiers = {}
+        v.split(",").each do |pair|
+          key, value = pair.split("=", 2)
+          if key && value
+            qualifiers[key.strip] = value.strip
+          end
+        end
+        options[:qualifiers] = qualifiers unless qualifiers.empty?
+      end
+      
+      opts.on("--subpath SUBPATH", "Package subpath") do |v|
+        options[:subpath] = v
+      end
+      
+      opts.on("-h", "--help", "Show this help") do
+        puts opts
+        exit 0
+      end
+    end.parse!(args)
+
+    unless options[:type] && options[:name]
+      output_error("--type and --name are required")
+      puts "Use 'purl generate --help' for more information" unless @json_output
+      exit 1
+    end
+
+    begin
+      purl = Purl::PackageURL.new(**options)
+      if @json_output
+        result = {
+          success: true,
+          purl: purl.to_s,
+          components: {
+            type: purl.type,
+            namespace: purl.namespace,
+            name: purl.name,
+            version: purl.version,
+            qualifiers: purl.qualifiers || {},
+            subpath: purl.subpath
+          }
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts purl.to_s
+      end
+    rescue Purl::Error => e
+      if @json_output
+        result = {
+          success: false,
+          error: e.message,
+          options: options
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Error generating PURL: #{e.message}"
+      end
+      exit 1
+    end
+  end
+
+  def info_command(args)
+    if args.empty?
+      # Show all types
+      all_info = Purl.all_type_info
+      metadata = Purl.types_config_metadata
+      
+      if @json_output
+        result = {
+          success: true,
+          types: all_info,
+          metadata: metadata
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Known PURL types:"
+        puts
+        
+        all_info.each do |type, info|
+          puts "  #{type}"
+          puts "    Description: #{info[:description] || 'No description available'}"
+          puts "    Registry support: #{info[:registry_url_generation] ? 'Yes' : 'No'}"
+          puts "    Reverse parsing: #{info[:reverse_parsing] ? 'Yes' : 'No'}"
+          puts
+        end
+        
+        puts "Total types: #{metadata[:total_types]}"
+        puts "Registry supported: #{metadata[:registry_supported_types]}"
+      end
+    else
+      # Show specific type info
+      type = args[0]
+      info = Purl.type_info(type)
+      
+      if @json_output
+        result = {
+          success: true,
+          type: info
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Type: #{info[:type]}"
+        puts "Known: #{info[:known] ? 'Yes' : 'No'}"
+        puts "Description: #{info[:description] || 'No description available'}"
+        
+        if info[:default_registry]
+          puts "Default registry: #{info[:default_registry]}"
+        end
+        
+        puts "Registry URL generation: #{info[:registry_url_generation] ? 'Yes' : 'No'}"
+        puts "Reverse parsing: #{info[:reverse_parsing] ? 'Yes' : 'No'}"
+        
+        if info[:examples] && !info[:examples].empty?
+          puts "Examples:"
+          info[:examples].each do |example|
+            puts "  #{example}"
+          end
+        end
+        
+        if info[:route_patterns] && !info[:route_patterns].empty?
+          puts "Registry URL patterns:"
+          info[:route_patterns].each do |pattern|
+            puts "  #{pattern}"
+          end
+        end
+      end
+    end
+  end
+
+  def output_error(message)
+    if @json_output
+      result = {
+        success: false,
+        error: message
+      }
+      puts JSON.pretty_generate(result)
+    else
+      puts "Error: #{message}"
+    end
+  end
+end
+
+if __FILE__ == $0
+  PurlCLI.run
+end

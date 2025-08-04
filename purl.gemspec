@@ -29,7 +29,7 @@ It supports 37 package types (32 official + 5 additional ecosystems) and is full
     end
   end
   spec.bindir = "exe"
-  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.executables = ["purl"]
   spec.require_paths = ["lib"]
 
   # Dependencies

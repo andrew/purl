@@ -16,6 +16,7 @@ This library features comprehensive error handling with namespaced error types, 
 
 ## Features
 
+- **Command-line interface** with parse, validate, convert, generate, and info commands plus JSON output
 - **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
 - **Better error handling** with namespaced error classes and contextual information
 - **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
@@ -46,7 +47,175 @@ Or install it yourself as:
 gem install purl
 ```
 
-## Usage
+## Command Line Interface
+
+The purl gem includes a command-line interface that provides convenient access to all parsing, validation, conversion, and generation functionality.
+
+### Installation
+
+The CLI is automatically available after installing the gem:
+
+```bash
+gem install purl
+purl --help
+```
+
+### Available Commands
+
+```bash
+purl parse <purl-string>              # Parse and display PURL components
+purl validate <purl-string>           # Validate a PURL (exit code indicates success)
+purl convert <registry-url>           # Convert registry URL to PURL
+purl url <purl-string>                # Convert PURL to registry URL
+purl generate [options]               # Generate PURL from components
+purl info [type]                      # Show information about PURL types
+```
+
+### JSON Output
+
+All commands support JSON output with the `--json` flag:
+
+```bash
+purl --json parse "pkg:gem/rails@7.0.0"
+purl --json info gem
+```
+
+### Command Examples
+
+#### Parse a PURL
+```bash
+$ purl parse "pkg:gem/rails@7.0.0"
+Valid PURL: pkg:gem/rails@7.0.0
+Components:
+  Type:       gem
+  Namespace:  (none)
+  Name:       rails
+  Version:    7.0.0
+  Qualifiers: (none)
+  Subpath:    (none)
+
+$ purl --json parse "pkg:npm/@babel/core@7.0.0"
+{
+  "success": true,
+  "purl": "pkg:npm/%40babel/core@7.0.0",
+  "components": {
+    "type": "npm",
+    "namespace": "@babel",
+    "name": "core",
+    "version": "7.0.0",
+    "qualifiers": {},
+    "subpath": null
+  }
+}
+```
+
+#### Validate a PURL
+```bash
+$ purl validate "pkg:gem/rails@7.0.0"
+Valid PURL
+
+$ purl validate "invalid-purl"
+Invalid PURL: PURL must start with 'pkg:'
+```
+
+#### Convert Registry URL to PURL
+```bash
+$ purl convert "https://rubygems.org/gems/rails"
+pkg:gem/rails
+
+$ purl convert "https://www.npmjs.com/package/@babel/core"
+pkg:npm/@babel/core
+```
+
+#### Convert PURL to Registry URL
+```bash
+$ purl url "pkg:gem/rails@7.0.0"
+https://rubygems.org/gems/rails
+
+$ purl url "pkg:npm/@babel/core@7.0.0"
+https://www.npmjs.com/package/@babel/core
+
+$ purl --json url "pkg:gem/rails@7.0.0"
+{
+  "success": true,
+  "purl": "pkg:gem/rails@7.0.0",
+  "registry_url": "https://rubygems.org/gems/rails",
+  "type": "gem"
+}
+```
+
+#### Generate a PURL
+```bash
+$ purl generate --type gem --name rails --version 7.0.0
+pkg:gem/rails@7.0.0
+
+$ purl generate --type npm --namespace @babel --name core --version 7.0.0 --qualifiers "arch=x64,os=linux"
+pkg:npm/%40babel/core@7.0.0?arch=x64&os=linux
+```
+
+#### Show Type Information
+```bash
+$ purl info gem
+Type: gem
+Known: Yes
+Description: RubyGems
+Default registry: https://rubygems.org
+Registry URL generation: Yes
+Reverse parsing: Yes
+Examples:
+  pkg:gem/ruby-advisory-db-check@0.12.4
+  pkg:gem/rails@7.0.4
+  pkg:gem/bundler@2.3.26
+Registry URL patterns:
+  https://rubygems.org/gems/:name
+  https://rubygems.org/gems/:name/versions/:version
+
+$ purl info  # Shows all types
+Known PURL types:
+
+  alpm
+    Description: Arch Linux packages
+    Registry support: No
+    Reverse parsing: No
+  ...
+Total types: 37
+Registry supported: 20
+```
+
+### Generate Options
+
+The `generate` command supports all PURL components:
+
+```bash
+purl generate --help
+Usage: purl generate [options]
+    --type TYPE                      Package type (required)
+    --name NAME                      Package name (required)
+    --namespace NAMESPACE            Package namespace
+    --version VERSION                Package version
+    --qualifiers QUALIFIERS          Qualifiers as key=value,key2=value2
+    --subpath SUBPATH                Package subpath
+    -h, --help                       Show this help
+```
+
+### Exit Codes
+
+The CLI uses standard exit codes:
+- `0` - Success
+- `1` - Error (invalid PURL, unsupported operation, etc.)
+
+This makes the CLI suitable for use in scripts and CI/CD pipelines:
+
+```bash
+if purl validate "pkg:gem/rails@7.0.0"; then
+  echo "Valid PURL"
+else
+  echo "Invalid PURL"
+  exit 1
+fi
+```
+
+## Library Usage
 
 ### Basic PURL Parsing
 
