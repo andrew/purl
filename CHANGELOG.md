@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2025-08-04
+
+### Fixed
+- Remove arbitrary business logic validation, follow PURL spec for namespace requirements
+
 ## [1.3.0] - 2025-07-29
 
 ### Added
