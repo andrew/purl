@@ -479,6 +479,4 @@ class PurlCLI
   end
 end
 
-if File.expand_path(__FILE__) == File.expand_path($PROGRAM_NAME)
-  PurlCLI.run
-end
+PurlCLI.run
