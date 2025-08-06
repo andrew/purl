@@ -4,6 +4,8 @@ require_relative "purl/version"
 require_relative "purl/errors"
 require_relative "purl/package_url"
 require_relative "purl/registry_url"
+require_relative "purl/lookup"
+require_relative "purl/lookup_formatter"
 
 # The main PURL (Package URL) module providing functionality to parse,
 # validate, and generate package URLs according to the PURL specification.
@@ -20,6 +22,12 @@ require_relative "purl/registry_url"
 # @example Registry URL conversion
 #   purl = Purl.from_registry_url("https://rubygems.org/gems/rails")
 #   puts purl.to_s     # "pkg:gem/rails"
+#
+# @example Package information lookup
+#   purl = Purl.parse("pkg:cargo/rand@0.9.2")
+#   info = purl.lookup
+#   puts info[:package][:description]
+#   puts info[:version][:published_at] if info[:version]
 #
 # @see https://github.com/package-url/purl-spec PURL Specification
 module Purl

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `versionless` convenience method to create a PackageURL without version component
+- `lookup` command to CLI for fetching package information from ecosyste.ms API with version-specific details
+- `Purl::Lookup` class for programmatic package information lookup
+- `lookup` instance method on `PackageURL` for convenient package information retrieval
+- `Purl::LookupFormatter` class for customizable lookup result formatting
+- Package maintainer information display in lookup results
+- Number formatting with thousands separators for better readability
 
 ## [1.4.0] - 2025-01-06
 

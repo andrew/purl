@@ -3,6 +3,8 @@
 
 require "optparse"
 require "json"
+require "net/http"
+require "uri"
 require_relative "../lib/purl"
 
 class PurlCLI
@@ -40,6 +42,8 @@ class PurlCLI
       url_command(args)
     when "info"
       info_command(args)
+    when "lookup"
+      lookup_command(args)
     when "--help", "-h", "help"
       puts usage
       exit 0
@@ -66,6 +70,7 @@ class PurlCLI
         purl [--json] url <purl-string>       Convert PURL to registry URL
         purl [--json] generate [options]      Generate PURL from components
         purl [--json] info [type]             Show information about PURL types
+        purl [--json] lookup <purl-string>    Look up package information from ecosyste.ms
         purl --version                        Show version
         purl --help                           Show this help
 
@@ -80,6 +85,7 @@ class PurlCLI
         purl url "pkg:gem/rails@7.0.0"
         purl generate --type gem --name rails --version 7.0.0
         purl --json info gem
+        purl lookup "pkg:cargo/rand"
     USAGE
   end
 
@@ -414,6 +420,49 @@ class PurlCLI
           end
         end
       end
+    end
+  end
+
+  def lookup_command(args)
+    if args.empty?
+      output_error("PURL string required")
+      exit 1
+    end
+
+    purl_string = args[0]
+    
+    begin
+      # Validate PURL first
+      purl = Purl.parse(purl_string)
+      
+      # Use the library lookup method
+      info = purl.lookup(user_agent: "purl-ruby-cli/#{Purl::VERSION}")
+      
+      # Use formatter to generate output
+      formatter = Purl::LookupFormatter.new
+      
+      if @json_output
+        result = formatter.format_json(info, purl)
+        puts JSON.pretty_generate(result)
+        exit 1 unless result[:success]
+      else
+        if info
+          puts formatter.format_text(info, purl)
+        else
+          puts "Package not found in ecosyste.ms database"
+          exit 1
+        end
+      end
+      
+    rescue Purl::Error => e
+      output_error("Invalid PURL: #{e.message}")
+      exit 1
+    rescue Purl::LookupError => e
+      output_error("Lookup failed: #{e.message}")
+      exit 1
+    rescue StandardError => e
+      output_error("Lookup failed: #{e.message}")
+      exit 1
     end
   end
 

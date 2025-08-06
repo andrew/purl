@@ -24,6 +24,7 @@ class TestCLI < Minitest::Test
     assert_includes stdout, "convert"
     assert_includes stdout, "generate"
     assert_includes stdout, "info"
+    assert_includes stdout, "lookup"
     assert_includes stdout, "--json"
   end
 
@@ -167,6 +168,18 @@ class TestCLI < Minitest::Test
     assert_includes stdout, "PURL string required"
   end
 
+  def test_lookup_missing_args
+    stdout, _stderr, status = run_cli("lookup")
+    refute status.success?
+    assert_includes stdout, "PURL string required"
+  end
+
+  def test_lookup_invalid_purl
+    stdout, _stderr, status = run_cli("lookup", "invalid-purl")
+    refute status.success?
+    assert_includes stdout, "Invalid PURL:"
+  end
+
   # JSON output tests
   def test_parse_json_output
     stdout, _stderr, status = run_cli("--json", "parse", "pkg:gem/rails@7.0.0")
@@ -262,5 +275,29 @@ class TestCLI < Minitest::Test
     result = JSON.parse(stdout)
     assert_equal false, result["success"]
     assert_includes result["error"], "Registry URL generation not supported for type 'generic'"
+  end
+
+  def test_lookup_json_output_invalid_purl
+    stdout, _stderr, status = run_cli("--json", "lookup", "invalid-purl")
+    refute status.success?
+    
+    result = JSON.parse(stdout)
+    assert_equal false, result["success"]
+    assert_includes result["error"], "Invalid PURL:"
+  end
+
+  def test_lookup_with_version_format
+    # Test that lookup command accepts versioned PURLs (structure test only)
+    # We can't easily test the actual API response in unit tests
+    stdout, _stderr, status = run_cli("lookup", "pkg:cargo/rand@0.8.5")
+    # This might fail with network error or package not found, but should not fail with invalid PURL
+    assert_not_includes stdout, "Invalid PURL:" if status.exitstatus == 1
+  end
+
+  def test_lookup_without_version_format
+    # Test that lookup command accepts versionless PURLs (structure test only)
+    stdout, _stderr, status = run_cli("lookup", "pkg:cargo/rand")
+    # This might fail with network error or package not found, but should not fail with invalid PURL  
+    assert_not_includes stdout, "Invalid PURL:" if status.exitstatus == 1
   end
 end

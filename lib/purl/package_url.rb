@@ -372,6 +372,24 @@ module Purl
       with(version: nil)
     end
 
+    # Look up package information using the ecosyste.ms API
+    #
+    # @param user_agent [String] User agent string for API requests
+    # @param timeout [Integer] Request timeout in seconds
+    # @return [Hash, nil] Package information hash or nil if not found
+    # @raise [LookupError] if the lookup fails due to network or API errors
+    #
+    # @example
+    #   purl = PackageURL.parse("pkg:cargo/rand@0.9.2")
+    #   info = purl.lookup
+    #   puts info[:package][:name]  # => "rand"
+    #   puts info[:version][:published_at] if info[:version]  # => "2025-07-20T17:47:01.870Z"
+    def lookup(user_agent: nil, timeout: 10)
+      require_relative "lookup"
+      lookup_client = Lookup.new(user_agent: user_agent, timeout: timeout)
+      lookup_client.package_info(self)
+    end
+
     private
 
     def validate_and_normalize_type(type)
