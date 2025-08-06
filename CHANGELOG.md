@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2025-08-06
+
+### Fixed
+- CLI executable runs unconditionally to ensure proper execution when installed as gem
+
 ## [1.5.1] - 2025-08-06
 
 ### Fixed
