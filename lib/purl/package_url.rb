@@ -360,6 +360,18 @@ module Purl
       self.class.new(**new_attrs)
     end
 
+    # Create a new PackageURL without the version component
+    #
+    # @return [PackageURL] new PackageURL instance with version set to nil
+    #
+    # @example
+    #   purl = PackageURL.parse("pkg:gem/rails@7.0.0")
+    #   versionless = purl.versionless
+    #   puts versionless.to_s  # "pkg:gem/rails"
+    def versionless
+      with(version: nil)
+    end
+
     private
 
     def validate_and_normalize_type(type)

@@ -418,6 +418,33 @@ class TestPurl < Minitest::Test
     assert_equal "pkg:npm/%40babel/core@7.20.0?arch=x64", original.to_s
   end
 
+  def test_versionless_method
+    # Test with versioned purl
+    versioned = Purl::PackageURL.new(
+      type: "gem",
+      name: "rails",
+      version: "7.0.0",
+      qualifiers: { "arch" => "x64" }
+    )
+    
+    versionless = versioned.versionless
+    assert_nil versionless.version
+    assert_equal "gem", versionless.type
+    assert_equal "rails", versionless.name
+    assert_equal({ "arch" => "x64" }, versionless.qualifiers)
+    assert_equal "pkg:gem/rails?arch=x64", versionless.to_s
+    
+    # Original should remain unchanged
+    assert_equal "7.0.0", versioned.version
+    assert_equal "pkg:gem/rails@7.0.0?arch=x64", versioned.to_s
+    
+    # Test with already versionless purl
+    already_versionless = Purl::PackageURL.new(type: "npm", name: "lodash")
+    still_versionless = already_versionless.versionless
+    assert_nil still_versionless.version
+    assert_equal "pkg:npm/lodash", still_versionless.to_s
+  end
+
   def test_registry_url_with_custom_domain
     # Test npm package with custom domain
     purl = Purl::PackageURL.new(type: "npm", namespace: "@babel", name: "core")
