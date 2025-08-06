@@ -69,6 +69,7 @@ purl convert <registry-url>           # Convert registry URL to PURL
 purl url <purl-string>                # Convert PURL to registry URL
 purl generate [options]               # Generate PURL from components
 purl info [type]                      # Show information about PURL types
+purl lookup <purl-string>             # Look up package information from ecosyste.ms
 ```
 
 ### JSON Output
@@ -78,6 +79,7 @@ All commands support JSON output with the `--json` flag:
 ```bash
 purl --json parse "pkg:gem/rails@7.0.0"
 purl --json info gem
+purl --json lookup "pkg:cargo/rand"
 ```
 
 ### Command Examples
@@ -180,6 +182,50 @@ Known PURL types:
   ...
 Total types: 37
 Registry supported: 20
+```
+
+#### Look Up Package Information
+```bash
+$ purl lookup "pkg:cargo/rand"
+Package: rand (cargo)
+Description: Random number generators and other randomness functionality.
+Homepage: https://rust-random.github.io/book
+Repository: https://github.com/rust-random/rand
+License: MIT OR Apache-2.0
+Downloads: 145,678,901
+Latest Version: 0.8.5
+Published: 2023-01-13T17:47:01.870Z
+
+$ purl --json lookup "pkg:cargo/rand@0.8.5"
+{
+  "success": true,
+  "purl": "pkg:cargo/rand@0.8.5",
+  "package": {
+    "name": "rand",
+    "ecosystem": "cargo",
+    "description": "Random number generators and other randomness functionality.",
+    "homepage": "https://rust-random.github.io/book",
+    "repository_url": "https://github.com/rust-random/rand",
+    "registry_url": "https://crates.io/crates/rand",
+    "licenses": "MIT OR Apache-2.0",
+    "latest_version": "0.8.5",
+    "latest_version_published_at": "2023-01-13T17:47:01.870Z",
+    "versions_count": 89,
+    "maintainers": [
+      {
+        "login": "dhardy",
+        "name": "Diggory Hardy"
+      }
+    ]
+  },
+  "version": {
+    "number": "0.8.5",
+    "published_at": "2023-01-13T17:47:01.870Z",
+    "registry_url": "https://crates.io/crates/rand/0.8.5",
+    "downloads": 5678901,
+    "size": 102400
+  }
+}
 ```
 
 ### Generate Options
