@@ -3,6 +3,7 @@
 require "net/http"
 require "uri"
 require "json"
+require "timeout"
 
 module Purl
   # Provides lookup functionality for packages using the ecosyste.ms API
@@ -32,28 +33,45 @@ module Purl
     def package_info(purl)
       purl_obj = purl.is_a?(PackageURL) ? purl : PackageURL.parse(purl.to_s)
       
-      # Make API request to ecosyste.ms
+      # Try package lookup first
       uri = URI("#{ECOSYSTE_MS_API_BASE}/packages/lookup")
       uri.query = URI.encode_www_form({ purl: purl_obj.to_s })
       
       response_data = make_request(uri)
       
-      return nil unless response_data.is_a?(Array) && response_data.length > 0
-      
-      package_data = response_data[0]
-      
-      result = {
-        purl: purl_obj.to_s,
-        package: extract_package_info(package_data)
-      }
-      
-      # If PURL has a version and we have a versions_url, fetch version-specific details
-      if purl_obj.version && package_data["versions_url"]
-        version_info = fetch_version_info(package_data["versions_url"], purl_obj.version)
-        result[:version] = version_info if version_info
+      if response_data.is_a?(Array) && response_data.length > 0
+        package_data = response_data[0]
+        
+        result = {
+          purl: purl_obj.to_s,
+          package: extract_package_info(package_data)
+        }
+        
+        # If PURL has a version and we have a versions_url, fetch version-specific details
+        if purl_obj.version && package_data["versions_url"]
+          version_info = fetch_version_info(package_data["versions_url"], purl_obj.version)
+          result[:version] = version_info if version_info
+        end
+        
+        return result
       end
       
-      result
+      # If no package found, try repository lookup
+      repo_uri = URI("https://repos.ecosyste.ms/api/v1/repositories/lookup")
+      repo_uri.query = URI.encode_www_form({ purl: purl_obj.to_s })
+      
+      repo_data = make_request(repo_uri)
+      
+      if repo_data
+        result = {
+          purl: purl_obj.to_s,
+          repository: extract_repository_info(repo_data)
+        }
+        
+        return result
+      end
+      
+      nil
     end
 
     # Look up version information for a specific version of a package
@@ -102,7 +120,7 @@ module Purl
       end
     rescue JSON::ParserError => e
       raise LookupError, "Failed to parse API response: #{e.message}"
-    rescue Net::TimeoutError, Net::OpenTimeout, Net::ReadTimeout => e
+    rescue Timeout::Error, Net::OpenTimeout, Net::ReadTimeout => e
       raise LookupError, "Request timeout: #{e.message}"
     rescue StandardError => e
       raise LookupError, "Lookup failed: #{e.message}"
@@ -182,6 +200,29 @@ module Purl
           url: maintainer["url"]
         }.compact # Remove nil values
       end
+    end
+
+    def extract_repository_info(repo_data)
+      {
+        name: repo_data["name"],
+        full_name: repo_data["full_name"],
+        host: repo_data["host"],
+        description: repo_data["description"],
+        homepage: repo_data["homepage"],
+        url: repo_data["url"],
+        language: repo_data["language"],
+        license: repo_data["license"],
+        fork: repo_data["fork"],
+        archived: repo_data["archived"],
+        stars: repo_data["stargazers_count"],
+        forks: repo_data["forks_count"],
+        open_issues: repo_data["open_issues_count"],
+        default_branch: repo_data["default_branch"],
+        pushed_at: repo_data["pushed_at"],
+        created_at: repo_data["created_at"],
+        updated_at: repo_data["updated_at"],
+        topics: repo_data["topics"]
+      }
     end
   end
 

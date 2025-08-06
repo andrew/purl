@@ -14,6 +14,45 @@ module Purl
     def format_text(lookup_result, purl)
       return "Package not found" unless lookup_result
 
+      if lookup_result[:package]
+        format_package_text(lookup_result, purl)
+      elsif lookup_result[:repository]
+        format_repository_text(lookup_result, purl)
+      else
+        "No information found"
+      end
+    end
+
+    # Format package lookup results for JSON output
+    #
+    # @param lookup_result [Hash] Result from Purl::Lookup#package_info
+    # @param purl [PackageURL] Original PURL object
+    # @return [Hash] JSON-ready hash structure
+    def format_json(lookup_result, purl)
+      return {
+        success: false,
+        purl: purl.to_s,
+        error: "Package not found in ecosyste.ms database"
+      } unless lookup_result
+
+      result = {
+        success: true,
+        purl: purl.to_s
+      }
+      
+      if lookup_result[:package]
+        result[:package] = lookup_result[:package]
+        result[:version] = lookup_result[:version] if lookup_result[:version]
+      elsif lookup_result[:repository]
+        result[:repository] = lookup_result[:repository]
+      end
+      
+      result
+    end
+
+    private
+
+    def format_package_text(lookup_result, purl)
       package = lookup_result[:package]
       version_info = lookup_result[:version]
       
@@ -86,27 +125,44 @@ module Purl
       output.join("\n")
     end
 
-    # Format package lookup results for JSON output
-    #
-    # @param lookup_result [Hash] Result from Purl::Lookup#package_info
-    # @param purl [PackageURL] Original PURL object
-    # @return [Hash] JSON-ready hash structure
-    def format_json(lookup_result, purl)
-      return {
-        success: false,
-        purl: purl.to_s,
-        error: "Package not found in ecosyste.ms database"
-      } unless lookup_result
-
-      result = {
-        success: true,
-        purl: purl.to_s,
-        package: lookup_result[:package]
-      }
+    def format_repository_text(lookup_result, purl)
+      repository = lookup_result[:repository]
       
-      result[:version] = lookup_result[:version] if lookup_result[:version]
+      output = []
       
-      result
+      # Repository header - map to package-like format
+      output << "Package: #{repository[:name]} (repository)"
+      output << "#{repository[:description]}" if repository[:description]
+      
+      # Repository stats section (maps to version info)
+      output << ""
+      output << "Version Information:"
+      output << "  Default branch: #{repository[:default_branch]}" if repository[:default_branch]
+      output << "  Last updated: #{repository[:pushed_at]}" if repository[:pushed_at]
+      output << "  Created: #{repository[:created_at]}" if repository[:created_at]
+      
+      # Links section
+      output << ""
+      output << "Links:"
+      output << "  Homepage: #{repository[:homepage]}" if repository[:homepage]
+      output << "  Repository: #{repository[:url]}" if repository[:url]
+      
+      # Package Info section (repository stats)
+      output << ""
+      output << "Package Info:"
+      output << "  Language: #{repository[:language]}" if repository[:language]
+      output << "  License: #{repository[:license]}" if repository[:license]
+      output << "  Stars: #{format_number(repository[:stars])}" if repository[:stars]
+      output << "  Forks: #{format_number(repository[:forks])}" if repository[:forks]
+      output << "  Open issues: #{format_number(repository[:open_issues])}" if repository[:open_issues]
+      output << "  Fork: #{repository[:fork] ? 'Yes' : 'No'}" if !repository[:fork].nil?
+      output << "  Archived: #{repository[:archived] ? 'Yes' : 'No'}" if !repository[:archived].nil?
+      
+      if repository[:topics] && !repository[:topics].empty?
+        output << "  Topics: #{repository[:topics].join(", ")}"
+      end
+      
+      output.join("\n")
     end
 
     private
