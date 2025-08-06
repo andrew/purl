@@ -187,8 +187,8 @@ module Purl
 
   # Error raised when package lookup fails
   class LookupError < Error
-    def initialize(message, component: :lookup, value: nil, rule: nil)
-      super(message, component: component, value: value, rule: rule)
+    def initialize(message)
+      super(message)
     end
   end
 end

@@ -36,7 +36,7 @@ class TestLookup < Minitest::Test
 
   def test_lookup_error_inheritance
     error = Purl::LookupError.new("test message")
-    assert_instance_of Purl::Error, error
+    assert_kind_of Purl::Error, error
     assert_instance_of Purl::LookupError, error
     assert_equal "test message", error.message
   end
