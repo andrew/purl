@@ -9,5 +9,5 @@ gem "irb"
 gem "rake", "~> 13.0"
 
 gem "minitest", "~> 5.16"
-gem "json-schema", "~> 5.0"
+gem "json-schema", "~> 5.2"
 
