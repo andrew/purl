@@ -291,13 +291,13 @@ class TestCLI < Minitest::Test
     # We can't easily test the actual API response in unit tests
     stdout, _stderr, status = run_cli("lookup", "pkg:cargo/rand@0.8.5")
     # This might fail with network error or package not found, but should not fail with invalid PURL
-    assert_not_includes stdout, "Invalid PURL:" if status.exitstatus == 1
+    refute_includes stdout, "Invalid PURL:" if status.exitstatus == 1
   end
 
   def test_lookup_without_version_format
     # Test that lookup command accepts versionless PURLs (structure test only)
     stdout, _stderr, status = run_cli("lookup", "pkg:cargo/rand")
     # This might fail with network error or package not found, but should not fail with invalid PURL  
-    assert_not_includes stdout, "Invalid PURL:" if status.exitstatus == 1
+    refute_includes stdout, "Invalid PURL:" if status.exitstatus == 1
   end
 end
