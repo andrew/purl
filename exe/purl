@@ -44,6 +44,8 @@ class PurlCLI
       info_command(args)
     when "lookup"
       lookup_command(args)
+    when "advisories"
+      advisories_command(args)
     when "--help", "-h", "help"
       puts usage
       exit 0
@@ -64,18 +66,19 @@ class PurlCLI
       purl - Parse, validate, convert and generate Package URLs (PURLs)
 
       Usage:
-        purl [--json] parse <purl-string>     Parse and display PURL components
-        purl [--json] validate <purl-string>  Validate a PURL (exit code indicates success)
-        purl [--json] convert <registry-url>  Convert registry URL to PURL
-        purl [--json] url <purl-string>       Convert PURL to registry URL
-        purl [--json] generate [options]      Generate PURL from components
-        purl [--json] info [type]             Show information about PURL types
-        purl [--json] lookup <purl-string>    Look up package information from ecosyste.ms
-        purl --version                        Show version
-        purl --help                           Show this help
+        purl [--json] parse <purl-string>       Parse and display PURL components
+        purl [--json] validate <purl-string>    Validate a PURL (exit code indicates success)
+        purl [--json] convert <registry-url>    Convert registry URL to PURL
+        purl [--json] url <purl-string>         Convert PURL to registry URL
+        purl [--json] generate [options]        Generate PURL from components
+        purl [--json] info [type]               Show information about PURL types
+        purl [--json] lookup <purl-string>      Look up package information from ecosyste.ms
+        purl [--json] advisories <purl-string>  Look up security advisories from advisories.ecosyste.ms
+        purl --version                          Show version
+        purl --help                             Show this help
 
       Global Options:
-        --json                                Output results in JSON format
+        --json                                  Output results in JSON format
 
       Examples:
         purl parse "pkg:gem/rails@7.0.0"
@@ -86,6 +89,7 @@ class PurlCLI
         purl generate --type gem --name rails --version 7.0.0
         purl --json info gem
         purl lookup "pkg:cargo/rand"
+        purl advisories "pkg:npm/lodash@4.17.20"
     USAGE
   end
 
@@ -430,17 +434,17 @@ class PurlCLI
     end
 
     purl_string = args[0]
-    
+
     begin
       # Validate PURL first
       purl = Purl.parse(purl_string)
-      
+
       # Use the library lookup method
       info = purl.lookup(user_agent: "purl-ruby-cli/#{Purl::VERSION}")
-      
+
       # Use formatter to generate output
       formatter = Purl::LookupFormatter.new
-      
+
       if @json_output
         result = formatter.format_json(info, purl)
         puts JSON.pretty_generate(result)
@@ -453,7 +457,7 @@ class PurlCLI
           exit 1
         end
       end
-      
+
     rescue Purl::LookupError => e
       output_error("Lookup failed: #{e.message}")
       exit 1
@@ -462,6 +466,43 @@ class PurlCLI
       exit 1
     rescue StandardError => e
       output_error("Lookup failed: #{e.message}")
+      exit 1
+    end
+  end
+
+  def advisories_command(args)
+    if args.empty?
+      output_error("PURL string required")
+      exit 1
+    end
+
+    purl_string = args[0]
+
+    begin
+      # Validate PURL first
+      purl = Purl.parse(purl_string)
+
+      # Use the library advisories method
+      advisories = purl.advisories(user_agent: "purl-ruby-cli/#{Purl::VERSION}")
+
+      # Use formatter to generate output
+      formatter = Purl::AdvisoryFormatter.new
+
+      if @json_output
+        result = formatter.format_json(advisories, purl)
+        puts JSON.pretty_generate(result)
+      else
+        puts formatter.format_text(advisories, purl)
+      end
+
+    rescue Purl::AdvisoryError => e
+      output_error("Advisory lookup failed: #{e.message}")
+      exit 1
+    rescue Purl::Error => e
+      output_error("Invalid PURL: #{e.message}")
+      exit 1
+    rescue StandardError => e
+      output_error("Advisory lookup failed: #{e.message}")
       exit 1
     end
   end

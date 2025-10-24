@@ -6,6 +6,8 @@ require_relative "purl/package_url"
 require_relative "purl/registry_url"
 require_relative "purl/lookup"
 require_relative "purl/lookup_formatter"
+require_relative "purl/advisory"
+require_relative "purl/advisory_formatter"
 
 # The main PURL (Package URL) module providing functionality to parse,
 # validate, and generate package URLs according to the PURL specification.

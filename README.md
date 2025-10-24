@@ -16,10 +16,12 @@ This library features comprehensive error handling with namespaced error types, 
 
 ## Features
 
-- **Command-line interface** with parse, validate, convert, generate, and info commands plus JSON output
+- **Command-line interface** with parse, validate, convert, generate, info, lookup, and advisories commands plus JSON output
 - **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
 - **Better error handling** with namespaced error classes and contextual information
 - **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
+- **Security advisory lookup** - query security advisories from advisories.ecosyste.ms
+- **Package information lookup** - query package metadata from ecosyste.ms
 - **Type-specific validation** for conan, cran, and swift packages
 - **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
 - **Rails-style route patterns** for registry URL templates
@@ -70,6 +72,7 @@ purl url <purl-string>                # Convert PURL to registry URL
 purl generate [options]               # Generate PURL from components
 purl info [type]                      # Show information about PURL types
 purl lookup <purl-string>             # Look up package information from ecosyste.ms
+purl advisories <purl-string>         # Look up security advisories from advisories.ecosyste.ms
 ```
 
 ### JSON Output
@@ -80,6 +83,7 @@ All commands support JSON output with the `--json` flag:
 purl --json parse "pkg:gem/rails@7.0.0"
 purl --json info gem
 purl --json lookup "pkg:cargo/rand"
+purl --json advisories "pkg:npm/lodash@4.17.19"
 ```
 
 ### Command Examples
@@ -225,6 +229,60 @@ $ purl --json lookup "pkg:cargo/rand@0.8.5"
     "downloads": 5678901,
     "size": 102400
   }
+}
+```
+
+#### Look Up Security Advisories
+```bash
+$ purl advisories "pkg:npm/lodash@4.17.19"
+Security Advisories for pkg:npm/lodash@4.17.19
+================================================================================
+
+Advisory #1: Regular Expression Denial of Service (ReDoS) in lodash
+Identifiers: GHSA-x5rq-j2xg-h7qm, CVE-2019-1010266
+Severity: MODERATE
+
+Description:
+  lodash prior to 4.7.11 is affected by: CWE-400: Uncontrolled Resource
+  Consumption. The impact is: Denial of service. The component is: Date
+  handler. The attack vector is: Attacker provides very long strings, which
+  the library attempts to match using a regular expression. The fixed version
+  is: 4.7.11.
+
+Affected Packages:
+  Package: npm/lodash
+  Vulnerable: >= 4.7.0, < 4.17.11
+  Patched: 4.17.11
+
+Source: github | Origin: UNSPECIFIED | Published: 2019-07-19T16:13:07.000Z
+Advisory URL: https://github.com/advisories/GHSA-x5rq-j2xg-h7qm
+
+Total advisories found: 3
+
+$ purl --json advisories "pkg:npm/lodash@4.17.19"
+{
+  "success": true,
+  "purl": "pkg:npm/lodash@4.17.19",
+  "advisories": [
+    {
+      "id": "MDE2OlNlY3VyaXR5QWR2aXNvcnlHSFNBLXg1cnEtajJ4Zy1oN3Ft",
+      "title": "Regular Expression Denial of Service (ReDoS) in lodash",
+      "description": "lodash prior to 4.7.11 is affected by...",
+      "severity": "MODERATE",
+      "url": "https://github.com/advisories/GHSA-x5rq-j2xg-h7qm",
+      "published_at": "2019-07-19T16:13:07.000Z",
+      "affected_packages": [
+        {
+          "ecosystem": "npm",
+          "name": "lodash",
+          "vulnerable_version_range": ">= 4.7.0, < 4.17.11",
+          "first_patched_version": "4.17.11"
+        }
+      ],
+      "identifiers": ["GHSA-x5rq-j2xg-h7qm", "CVE-2019-1010266"]
+    }
+  ],
+  "count": 3
 }
 ```
 
@@ -463,6 +521,42 @@ puts info[:examples]                  # => ["pkg:gem/rails@7.0.4", ...]
 puts info[:registry_url_generation]   # => true
 puts info[:reverse_parsing]           # => true
 puts info[:route_patterns]            # => ["https://rubygems.org/gems/:name", ...]
+```
+
+### Security Advisory Lookup
+
+Look up security advisories for packages using the advisories.ecosyste.ms API:
+
+```ruby
+# Look up advisories for a package
+purl = Purl.parse("pkg:npm/lodash@4.17.19")
+advisories = purl.advisories
+
+# Display advisory information
+advisories.each do |advisory|
+  puts "Title: #{advisory[:title]}"
+  puts "Severity: #{advisory[:severity]}"
+  puts "Description: #{advisory[:description]}"
+  puts "URL: #{advisory[:url]}"
+
+  # Show affected packages
+  advisory[:affected_packages].each do |pkg|
+    puts "  Package: #{pkg[:ecosystem]}/#{pkg[:name]}"
+    puts "  Vulnerable: #{pkg[:vulnerable_version_range]}"
+    puts "  Patched: #{pkg[:first_patched_version]}" if pkg[:first_patched_version]
+  end
+
+  # Show identifiers (CVE, GHSA, etc.)
+  puts "Identifiers: #{advisory[:identifiers].join(', ')}"
+  puts
+end
+
+# Look up advisories for any version of a package
+purl = Purl.parse("pkg:npm/lodash")
+all_advisories = purl.advisories
+
+# Use custom user agent and timeout
+advisories = purl.advisories(user_agent: "my-app/1.0", timeout: 5)
 ```
 
 ### Error Handling

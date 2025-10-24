@@ -390,6 +390,23 @@ module Purl
       lookup_client.package_info(self)
     end
 
+    # Look up security advisories using the advisories.ecosyste.ms API
+    #
+    # @param user_agent [String] User agent string for API requests
+    # @param timeout [Integer] Request timeout in seconds
+    # @return [Array<Hash>] Array of advisory hashes, empty if none found
+    # @raise [AdvisoryError] if the lookup fails due to network or API errors
+    #
+    # @example
+    #   purl = PackageURL.parse("pkg:npm/lodash@4.17.20")
+    #   advisories = purl.advisories
+    #   advisories.each { |adv| puts adv[:title] }
+    def advisories(user_agent: nil, timeout: 10)
+      require_relative "advisory"
+      advisory_client = Advisory.new(user_agent: user_agent, timeout: timeout)
+      advisory_client.lookup(self)
+    end
+
     private
 
     def validate_and_normalize_type(type)
