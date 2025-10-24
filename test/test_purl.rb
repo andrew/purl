@@ -649,7 +649,7 @@ class TestPurl < Minitest::Test
     
     # Test our purl-types.json against the official purl-types schema
     purl_types_data = JSON.parse(File.read(File.join(project_root, "purl-types.json")))
-    purl_types_schema = JSON.parse(File.read(File.join(schemas_dir, "purl-types-index.schema.json")))
+    purl_types_schema = JSON.parse(File.read(File.join(schemas_dir, "purl-types-index.schema-1.1.json")))
     
     # Remove $schema reference to avoid remote schema validation
     purl_types_schema.delete("$schema")

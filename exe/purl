@@ -454,11 +454,11 @@ class PurlCLI
         end
       end
       
-    rescue Purl::Error => e
-      output_error("Invalid PURL: #{e.message}")
-      exit 1
     rescue Purl::LookupError => e
       output_error("Lookup failed: #{e.message}")
+      exit 1
+    rescue Purl::Error => e
+      output_error("Invalid PURL: #{e.message}")
       exit 1
     rescue StandardError => e
       output_error("Lookup failed: #{e.message}")
