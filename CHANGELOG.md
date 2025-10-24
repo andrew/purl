@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2025-10-24
+
+### Added
+- `advisories` command to CLI for looking up security advisories from advisories.ecosyste.ms API
+- `advisories` instance method on `PackageURL` for programmatic advisory retrieval
+
+### Changed
+- Updated to PURL specification v1.1
+
 ## [1.5.2] - 2025-08-06
 
 ### Fixed
