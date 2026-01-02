@@ -4,6 +4,7 @@ require_relative "purl/version"
 require_relative "purl/errors"
 require_relative "purl/package_url"
 require_relative "purl/registry_url"
+require_relative "purl/download_url"
 require_relative "purl/lookup"
 require_relative "purl/lookup_formatter"
 require_relative "purl/advisory"
@@ -102,6 +103,17 @@ module Purl
     RegistryURL.supported_reverse_types
   end
 
+  # Returns types that have download URL support
+  #
+  # @return [Array<String>] sorted array of types that can generate download URLs
+  #
+  # @example
+  #   types = Purl.download_supported_types
+  #   puts types.include?("gem")  # true if gem has download URL support
+  def self.download_supported_types
+    DownloadURL.supported_types
+  end
+
   # Check if a type is known/valid
   #
   # @param type [String, Symbol] the type to check
@@ -140,6 +152,7 @@ module Purl
       examples: type_examples(normalized_type),
       registry_url_generation: RegistryURL.supports?(normalized_type),
       reverse_parsing: RegistryURL.supported_reverse_types.include?(normalized_type),
+      download_url_generation: DownloadURL.supports?(normalized_type),
       route_patterns: RegistryURL.route_patterns_for(normalized_type)
     }
   end

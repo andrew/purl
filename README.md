@@ -16,10 +16,11 @@ This library features comprehensive error handling with namespaced error types, 
 
 ## Features
 
-- **Command-line interface** with parse, validate, convert, generate, info, lookup, and advisories commands plus JSON output
+- **Command-line interface** with parse, validate, convert, download, generate, info, lookup, and advisories commands plus JSON output
 - **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
 - **Better error handling** with namespaced error classes and contextual information
 - **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
+- **Download URL generation** for 18 package ecosystems (gem, npm, cargo, maven, etc.)
 - **Security advisory lookup** - query security advisories from advisories.ecosyste.ms
 - **Package information lookup** - query package metadata from ecosyste.ms
 - **Type-specific validation** for conan, cran, and swift packages
@@ -69,6 +70,7 @@ purl parse <purl-string>              # Parse and display PURL components
 purl validate <purl-string>           # Validate a PURL (exit code indicates success)
 purl convert <registry-url>           # Convert registry URL to PURL
 purl url <purl-string>                # Convert PURL to registry URL
+purl download <purl-string>           # Get download URL for package version
 purl generate [options]               # Generate PURL from components
 purl info [type]                      # Show information about PURL types
 purl lookup <purl-string>             # Look up package information from ecosyste.ms
@@ -147,6 +149,26 @@ $ purl --json url "pkg:gem/rails@7.0.0"
   "purl": "pkg:gem/rails@7.0.0",
   "registry_url": "https://rubygems.org/gems/rails",
   "type": "gem"
+}
+```
+
+#### Get Download URL
+```bash
+$ purl download "pkg:gem/rails@7.0.0"
+https://rubygems.org/downloads/rails-7.0.0.gem
+
+$ purl download "pkg:npm/@babel/core@7.20.0"
+https://registry.npmjs.org/@babel/core/-/core-7.20.0.tgz
+
+$ purl download "pkg:cargo/serde@1.0.152"
+https://static.crates.io/crates/serde/serde-1.0.152.crate
+
+$ purl --json download "pkg:maven/org.apache.commons/commons-lang3@3.12.0"
+{
+  "success": true,
+  "purl": "pkg:maven/org.apache.commons/commons-lang3@3.12.0",
+  "download_url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar",
+  "type": "maven"
 }
 ```
 
@@ -408,6 +430,42 @@ purl = Purl.parse("pkg:npm/@babel/core@7.0.0")
 puts purl.registry_url                # => "https://www.npmjs.com/package/@babel/core"
 ```
 
+### Download URL Generation
+
+Generate direct download URLs for package artifacts:
+
+```ruby
+# Generate download URLs from PURLs
+purl = Purl.parse("pkg:gem/rails@7.0.0")
+puts purl.download_url  # => "https://rubygems.org/downloads/rails-7.0.0.gem"
+
+# Check if download URL generation is supported
+puts purl.supports_download_url?  # => true
+
+# NPM with scoped packages
+purl = Purl.parse("pkg:npm/@babel/core@7.20.0")
+puts purl.download_url  # => "https://registry.npmjs.org/@babel/core/-/core-7.20.0.tgz"
+
+# Maven packages
+purl = Purl.parse("pkg:maven/org.apache.commons/commons-lang3@3.12.0")
+puts purl.download_url  # => "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar"
+
+# Custom registry via repository_url qualifier
+purl = Purl.parse("pkg:npm/lodash@4.17.21?repository_url=https://npm.mycompany.com")
+puts purl.download_url  # => "https://npm.mycompany.com/lodash/-/lodash-4.17.21.tgz"
+
+# Custom registry via parameter
+purl = Purl.parse("pkg:gem/rails@7.0.0")
+puts purl.download_url(base_url: "https://gems.internal.com/downloads")
+# => "https://gems.internal.com/downloads/rails-7.0.0.gem"
+
+# Get list of supported types
+puts Purl.download_supported_types
+# => ["bioconductor", "bitbucket", "cargo", "clojars", "cran", "elm", "gem",
+#     "github", "gitlab", "golang", "hackage", "hex", "luarocks", "maven",
+#     "npm", "nuget", "pub", "swift"]
+```
+
 ### Reverse Parsing: Registry URLs to PURLs
 
 ```ruby
@@ -501,6 +559,7 @@ puts Purl.known_types.include?("gem") # => true
 puts Purl.known_type?("gem")                    # => true
 puts Purl.registry_supported_types              # => ["cargo", "gem", "maven", "npm", ...]
 puts Purl.reverse_parsing_supported_types       # => ["bioconductor", "cargo", "clojars", ...]
+puts Purl.download_supported_types              # => ["cargo", "gem", "maven", "npm", ...]
 
 # Get default registry for a type
 puts Purl.default_registry("gem")               # => "https://rubygems.org"
@@ -520,6 +579,7 @@ puts info[:default_registry]          # => "https://rubygems.org"
 puts info[:examples]                  # => ["pkg:gem/rails@7.0.4", ...]
 puts info[:registry_url_generation]   # => true
 puts info[:reverse_parsing]           # => true
+puts info[:download_url_generation]   # => true
 puts info[:route_patterns]            # => ["https://rubygems.org/gems/:name", ...]
 ```
 
@@ -609,6 +669,26 @@ The library supports 37 package types (32 official + 5 additional ecosystems):
 
 **Reverse Parsing (20 types):**
 - `bioconductor`, `cargo`, `clojars`, `cocoapods`, `composer`, `conda`, `cpan`, `deno`, `elm`, `gem`, `golang`, `hackage`, `hex`, `homebrew`, `maven`, `npm`, `nuget`, `pub`, `pypi`, `swift`
+
+**Download URL Generation (18 types):**
+- `bioconductor` - bioconductor.org/packages/release/bioc/src/contrib
+- `bitbucket` - bitbucket.org archive downloads
+- `cargo` - static.crates.io/crates
+- `clojars` - repo.clojars.org (Maven-style)
+- `cran` - cran.r-project.org/src/contrib
+- `elm` - GitHub archive downloads
+- `gem` - rubygems.org/downloads
+- `github` - GitHub archive downloads
+- `gitlab` - GitLab archive downloads
+- `golang` - proxy.golang.org
+- `hackage` - hackage.haskell.org/package
+- `hex` - repo.hex.pm/tarballs
+- `luarocks` - luarocks.org/manifests
+- `maven` - repo.maven.apache.org/maven2
+- `npm` - registry.npmjs.org
+- `nuget` - api.nuget.org/v3-flatcontainer
+- `pub` - pub.dev/packages
+- `swift` - GitHub/GitLab/Bitbucket (derived from namespace)
 
 **All 37 Supported Types:**
 `alpm`, `apk`, `bioconductor`, `bitbucket`, `bitnami`, `cargo`, `clojars`, `cocoapods`, `composer`, `conan`, `conda`, `cpan`, `cran`, `deb`, `deno`, `docker`, `elm`, `gem`, `generic`, `github`, `golang`, `hackage`, `hex`, `homebrew`, `huggingface`, `luarocks`, `maven`, `mlflow`, `npm`, `nuget`, `oci`, `pub`, `pypi`, `qpkg`, `rpm`, `swid`, `swift`

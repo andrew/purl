@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-01-02
+
+### Added
+- Download URL generation for 18 package ecosystems
+  - `download_url` instance method on `PackageURL` for getting artifact download URLs
+  - `supports_download_url?` method to check if download URL generation is supported
+  - `Purl.download_supported_types` to list all types with download URL support
+  - `download` command in CLI for getting download URLs from PURLs
+- Supported types: bioconductor, bitbucket, cargo, clojars, cran, elm, gem, github, gitlab, golang, hackage, hex, luarocks, maven, npm, nuget, pub, swift
+- Support for `repository_url` qualifier to use custom registries for downloads
+- Support for custom base URLs via parameter override
+
 ## [1.6.0] - 2025-10-24
 
 ### Added

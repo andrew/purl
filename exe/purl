@@ -40,6 +40,8 @@ class PurlCLI
       generate_command(args)
     when "url"
       url_command(args)
+    when "download"
+      download_command(args)
     when "info"
       info_command(args)
     when "lookup"
@@ -70,6 +72,7 @@ class PurlCLI
         purl [--json] validate <purl-string>    Validate a PURL (exit code indicates success)
         purl [--json] convert <registry-url>    Convert registry URL to PURL
         purl [--json] url <purl-string>         Convert PURL to registry URL
+        purl [--json] download <purl-string>    Get download URL for package version
         purl [--json] generate [options]        Generate PURL from components
         purl [--json] info [type]               Show information about PURL types
         purl [--json] lookup <purl-string>      Look up package information from ecosyste.ms
@@ -262,6 +265,73 @@ class PurlCLI
       else
         puts registry_url
       end
+    rescue Purl::Error => e
+      if @json_output
+        result = {
+          success: false,
+          purl: purl_string,
+          error: e.message
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Error: #{e.message}"
+      end
+      exit 1
+    end
+  end
+
+  def download_command(args)
+    if args.empty?
+      output_error("PURL string required")
+      exit 1
+    end
+
+    purl_string = args[0]
+
+    begin
+      purl = Purl.parse(purl_string)
+
+      unless purl.supports_download_url?
+        if @json_output
+          result = {
+            success: false,
+            purl: purl_string,
+            error: "Download URL generation not supported for type '#{purl.type}'",
+            supported_types: Purl.download_supported_types
+          }
+          puts JSON.pretty_generate(result)
+        else
+          puts "Error: Download URL generation not supported for type '#{purl.type}'"
+          puts "Supported types: #{Purl.download_supported_types.join(', ')}"
+        end
+        exit 1
+      end
+
+      download_url = purl.download_url
+
+      if @json_output
+        result = {
+          success: true,
+          purl: purl.to_s,
+          download_url: download_url,
+          type: purl.type
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts download_url
+      end
+    rescue Purl::MissingVersionError => e
+      if @json_output
+        result = {
+          success: false,
+          purl: purl_string,
+          error: "Version required for download URL"
+        }
+        puts JSON.pretty_generate(result)
+      else
+        puts "Error: Version required for download URL"
+      end
+      exit 1
     rescue Purl::Error => e
       if @json_output
         result = {
