@@ -222,6 +222,7 @@
     "golang": {
       "description": "Go packages",
       "default_registry": "https://pkg.go.dev",
+      "ecosystems_registry": "proxy.golang.org",
       "examples": [
         "pkg:golang/github.com/gorilla/context@234fd47e07d1004f0aed9c",
         "pkg:golang/google.golang.org/genproto#googleapis/api/annotations",
@@ -319,7 +320,8 @@
     "maven": {
       "description": "PURL type for Maven JARs and related artifacts.",
       "default_registry": "https://repo.maven.apache.org/maven2",
-      "namespace_requirement": "required", 
+      "ecosystems_registry": "repo1.maven.org",
+      "namespace_requirement": "required",
       "examples": [
         "pkg:maven/org.apache.commons/commons-lang3@3.12.0",
         "pkg:maven/junit/junit@4.13.2",
@@ -349,6 +351,7 @@
     "npm": {
       "description": "PURL type for npm packages.",
       "default_registry": "https://registry.npmjs.org",
+      "ecosystems_registry": "npmjs.org",
       "namespace_requirement": "optional",
       "examples": [
         "pkg:npm/@babel/core@7.20.0",

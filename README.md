@@ -466,6 +466,30 @@ puts Purl.download_supported_types
 #     "npm", "nuget", "pub", "swift"]
 ```
 
+### ecosyste.ms API URLs
+
+Generate API URLs for the packages.ecosyste.ms service:
+
+```ruby
+# Get the ecosyste.ms registry name for a package type
+purl = Purl.parse("pkg:gem/rake@13.3.1")
+purl.ecosystems_registry  # => "rubygems.org"
+
+# Generate API URLs
+purl.ecosystems_api_url          # => "https://packages.ecosyste.ms/api/v1/registries/rubygems.org/packages/rake/versions/13.3.1"
+purl.ecosystems_package_api_url  # => "https://packages.ecosyste.ms/api/v1/registries/rubygems.org/packages/rake"
+purl.ecosystems_version_api_url  # => "https://packages.ecosyste.ms/api/v1/registries/rubygems.org/packages/rake/versions/13.3.1"
+
+# Works with namespaced packages
+purl = Purl.parse("pkg:npm/@babel/core@7.20.0")
+purl.ecosystems_registry  # => "npmjs.org"
+purl.ecosystems_api_url   # => "https://packages.ecosyste.ms/api/v1/registries/npmjs.org/packages/%40babel%2Fcore/versions/7.20.0"
+
+# Without version, returns package URL
+purl = Purl.parse("pkg:cargo/serde")
+purl.ecosystems_api_url  # => "https://packages.ecosyste.ms/api/v1/registries/crates.io/packages/serde"
+```
+
 ### Reverse Parsing: Registry URLs to PURLs
 
 ```ruby
