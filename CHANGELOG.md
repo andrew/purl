@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-01-14
+
+### Added
+- ecosyste.ms API URL generation for packages and versions
+  - `ecosystems_registry` method returns the ecosyste.ms registry name for a PURL type
+  - `ecosystems_api_url` method generates the full API URL (version URL if version present, otherwise package URL)
+  - `ecosystems_package_api_url` method generates package API URL
+  - `ecosystems_version_api_url` method generates version API URL
+- New `ecosystems_registry` field in purl-types.json for types where the registry name differs from the registry URL host
+
 ## [1.7.0] - 2026-01-02
 
 ### Added
