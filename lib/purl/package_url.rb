@@ -48,8 +48,14 @@ module Purl
     # @return [String, nil] subpath within the package
     attr_reader :subpath
 
+    # Fast-path decode: skip URI.decode_www_form_component when no encoding present
+    def self.fast_decode(str)
+      str.include?("%") || str.include?("+") ? URI.decode_www_form_component(str) : str
+    end
+
     VALID_TYPE_CHARS = /\A[a-zA-Z0-9\.\+\-]+\z/.freeze
     VALID_QUALIFIER_KEY_CHARS = /\A[a-zA-Z0-9\.\-_]+\z/.freeze
+    STARTS_WITH_DIGIT = /\A\d/.freeze
 
     # Create a new PackageURL instance
     #
@@ -133,7 +139,7 @@ module Purl
           
           unless subpath_clean.empty?
             # Decode each component separately to handle paths properly
-            subpath_components = subpath_clean.split("/").map { |part| URI.decode_www_form_component(part) }
+            subpath_components = subpath_clean.split("/").map { |part| fast_decode(part) }
             subpath = subpath_components.join("/")
           end
         end
@@ -147,7 +153,7 @@ module Purl
         at_index = path_and_version_part.rindex("@")
         path_part = path_and_version_part[0...at_index]
         version_part = path_and_version_part[at_index + 1..-1]
-        version = URI.decode_www_form_component(version_part) unless version_part.empty?
+        version = fast_decode(version_part) unless version_part.empty?
       else
         path_part = path_and_version_part
       end
@@ -161,7 +167,7 @@ module Purl
       raise MalformedUrlError, "PURL path cannot be empty" if path_components.empty? || path_components == [""]
 
       # First component is always the type
-      type = URI.decode_www_form_component(path_components.shift)
+      type = fast_decode(path_components.shift)
       raise MalformedUrlError, "PURL must have a name component" if path_components.empty?
       
       # Handle empty name component (trailing slash case)
@@ -175,29 +181,29 @@ module Purl
           # All non-type components become namespace
           name = nil
           if path_components.length == 1
-            namespace = URI.decode_www_form_component(path_components[0])
+            namespace = fast_decode(path_components[0])
           else
-            namespace = path_components.map { |part| URI.decode_www_form_component(part) }.join("/")
+            namespace = path_components.map { |part| fast_decode(part) }.join("/")
           end
         end
       else
         # Normal parsing logic
         # For simple cases like gem/rails, there's just the name
-        # For namespaced cases like npm/@babel/core, @babel is namespace, core is name  
+        # For namespaced cases like npm/@babel/core, @babel is namespace, core is name
         if path_components.length == 1
           # Simple case: just type/name
-          name = URI.decode_www_form_component(path_components[0])
+          name = fast_decode(path_components[0])
           namespace = nil
         else
           # Multiple components - assume last is name, others are namespace
-          name = URI.decode_www_form_component(path_components.pop)
-          
+          name = fast_decode(path_components.pop)
+
           # Everything else is namespace
           if path_components.length == 1
-            namespace = URI.decode_www_form_component(path_components[0])
+            namespace = fast_decode(path_components[0])
           else
             # Multiple remaining components - treat as namespace joined together
-            namespace = path_components.map { |part| URI.decode_www_form_component(part) }.join("/")
+            namespace = path_components.map { |part| fast_decode(part) }.join("/")
           end
         end
       end
@@ -428,7 +434,7 @@ module Purl
         )
       end
       
-      if type_str.match?(/\A\d/)
+      if type_str.match?(STARTS_WITH_DIGIT)
         raise InvalidTypeError.new(
           "Type cannot start with a number",
           component: :type,
@@ -447,18 +453,15 @@ module Purl
       name_str = name.to_s.strip
       raise InvalidNameError.new("Name cannot contain only whitespace", component: :name, value: name) if name_str.empty?
       
-      # Apply type-specific normalization
-      case @type&.downcase
+      # Apply type-specific normalization (@type is already lowercased)
+      case @type
       when "bitbucket", "github"
         name_str.downcase
       when "pypi"
-        # PyPI names are case-insensitive and _ should be normalized to -
         name_str.downcase.gsub("_", "-")
       when "mlflow"
-        # MLflow name normalization happens after qualifiers are validated
         name_str
       when "composer"
-        # Composer names should be lowercase
         name_str.downcase
       else
         name_str
@@ -483,7 +486,7 @@ module Purl
       
       # Check that decoded namespace segments don't contain '/'
       namespace_str.split("/").each do |segment|
-        decoded_segment = URI.decode_www_form_component(segment)
+        decoded_segment = self.class.fast_decode(segment)
         if decoded_segment.include?("/")
           raise InvalidNamespaceError.new(
             "Namespace segments cannot contain '/' after URL decoding",
@@ -494,12 +497,11 @@ module Purl
         end
       end
       
-      # Apply type-specific normalization
-      case @type&.downcase
+      # Apply type-specific normalization (@type is already lowercased)
+      case @type
       when "bitbucket", "github"
         namespace_str.downcase
       when "composer"
-        # Composer namespaces should be lowercase
         namespace_str.downcase
       else
         namespace_str
@@ -512,10 +514,9 @@ module Purl
       version_str = version.to_s.strip
       return nil if version_str.empty?
       
-      # Apply type-specific normalization
-      case @type&.downcase
+      # Apply type-specific normalization (@type is already lowercased)
+      case @type
       when "huggingface"
-        # HuggingFace versions (git commit hashes) should be lowercase
         version_str.downcase
       else
         version_str
@@ -575,24 +576,25 @@ module Purl
     end
 
     def apply_post_validation_normalization
-      # MLflow names are case sensitive or insensitive based on repository per spec
-      if @type&.downcase == "mlflow" && @qualifiers && @qualifiers["repository_url"] && @qualifiers["repository_url"].include?("azuredatabricks")
+      if @type == "mlflow" && @qualifiers && @qualifiers["repository_url"] && @qualifiers["repository_url"].include?("azuredatabricks")
         # Databricks MLflow is case insensitive - normalize to lowercase per spec
         @name = @name.downcase
       end
       # Other MLflow repositories (like Azure ML) are case sensitive - no normalization needed
     end
 
+    NAMESPACE_REQUIRED_TYPES = begin
+      require "json"
+      require "set"
+      config_path = File.join(File.dirname(__FILE__), "..", "..", "purl-types.json")
+      config = JSON.parse(File.read(config_path))
+      types = config["types"].select { |_, v| v["namespace_requirement"] == "required" }.keys
+      Set.new(types).freeze
+    end
+
     def namespace_required_for_type?(type)
       return false unless type
-      
-      # Read from purl-types.json (included in gem)
-      types_data = self.class.purl_types_data
-      type_config = types_data.dig("types", type.downcase)
-      return false unless type_config
-      
-      # Check namespace_requirement field
-      type_config["namespace_requirement"] == "required"
+      NAMESPACE_REQUIRED_TYPES.include?(type.downcase)
     end
 
     def self.purl_types_data

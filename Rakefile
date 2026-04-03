@@ -847,6 +847,30 @@ namespace :benchmark do
       x.report("supported_reverse_types") do
         iterations.times { Purl::RegistryURL.supported_reverse_types }
       end
+
+      x.report("registry_supported_types") do
+        iterations.times { Purl::RegistryURL.supported_types }
+      end
+
+      x.report("parse (simple)") do
+        iterations.times { Purl.parse("pkg:gem/rails@7.0.0") }
+      end
+
+      x.report("parse (complex)") do
+        iterations.times { Purl.parse("pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js") }
+      end
+
+      x.report("parse (namespaced)") do
+        iterations.times { Purl.parse("pkg:maven/org.apache.commons/commons-lang3@3.12.0") }
+      end
+
+      x.report("from_url (domain match)") do
+        1_000.times { Purl.from_registry_url("https://rubygems.org/gems/rails") }
+      end
+
+      x.report("from_url (type hint)") do
+        1_000.times { Purl.from_registry_url("https://gems.internal.com/gems/rails", type: "gem") }
+      end
     end
   end
 
