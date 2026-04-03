@@ -1,0 +1,35 @@
+lib/purl/lookup.rb
+  57b7139f203e3f78 102-114,116-117,120
+lib/purl/registry_url.rb
+  57b7139f203e3f78 13-14,62,372-373,375
+lib/purl/ecosystems_url.rb
+  57b7139f203e3f78 6,75
+lib/purl.rb
+  57b7139f203e3f78 52-55,131,152,156-158
+test/test_purl.rb
+  57b7139f203e3f78 665-731
+lib/purl/download_url.rb
+  57b7139f203e3f78 162,175
+lib/purl/package_url.rb
+  57b7139f203e3f78 226-227,244,272,599
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "8a4c9f6c1408668a8c43a1109cb3350b4d52a591",
+  "prompts": {
+    "57b7139f203e3f78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7bc00b3b-6dd5-4a04-a4e1-cc28146f545c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt",
+      "messages": [],
+      "total_additions": 140,
+      "total_deletions": 66,
+      "accepted_lines": 123,
+      "overriden_lines": 0
+    }
+  }
+}
