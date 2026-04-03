@@ -874,6 +874,54 @@ namespace :benchmark do
     end
   end
 
+  desc "Benchmark memory allocations for hot paths"
+  task :memory do
+    require "memory_profiler"
+    require_relative "lib/purl"
+
+    sample_purls = [
+      "pkg:gem/rails@7.0.0",
+      "pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js",
+      "pkg:maven/org.apache.commons/commons-lang3@3.12.0?classifier=sources",
+      "pkg:cargo/rand@0.7.2",
+      "pkg:pypi/django@4.0.0",
+      "pkg:docker/nginx@sha256:abc123def",
+      "pkg:golang/github.com/gorilla/mux@1.8.0",
+    ]
+
+    parsed = sample_purls.map { |p| Purl.parse(p) }
+
+    benchmarks = {
+      "parse (simple)" => -> { Purl.parse("pkg:gem/rails@7.0.0") },
+      "parse (complex)" => -> { Purl.parse("pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js") },
+      "parse (namespaced)" => -> { Purl.parse("pkg:maven/org.apache.commons/commons-lang3@3.12.0") },
+      "to_s" => -> { parsed.each(&:to_s) },
+      "to_s (cold)" => -> { sample_purls.map { |p| Purl.parse(p) }.each(&:to_s) },
+      "== (equal)" => -> { parsed.each_cons(2) { |a, b| a == b } },
+      "known_type?" => -> { %w[gem npm maven cargo pypi].each { |t| Purl.known_type?(t) } },
+      "type_info" => -> { %w[gem npm maven].each { |t| Purl.type_info(t) } },
+      "supported_types" => -> { Purl::RegistryURL.supported_types },
+      "supported_reverse_types" => -> { Purl::RegistryURL.supported_reverse_types },
+      "download_supported_types" => -> { Purl::DownloadURL.supported_types },
+      "from_url (domain match)" => -> { Purl.from_registry_url("https://rubygems.org/gems/rails") },
+      "from_url (type hint)" => -> { Purl.from_registry_url("https://gems.internal.com/gems/rails", type: "gem") },
+    }
+
+    puts "Memory Allocation Benchmarks"
+    puts "=" * 70
+    printf "%-30s %10s %10s %10s\n", "Benchmark", "Objects", "Memsize", "Strings"
+    puts "-" * 70
+
+    benchmarks.each do |name, block|
+      report = MemoryProfiler.report { 100.times { block.call } }
+      printf "%-30s %10d %10d %10d\n",
+        name,
+        report.total_allocated,
+        report.total_allocated_memsize,
+        report.strings_allocated.size
+    end
+  end
+
   desc "Run all benchmarks"
   task all: [:parse, :types, :registry, :hotpaths] do
     puts
@@ -882,5 +930,6 @@ namespace :benchmark do
     puts "   Use 'rake benchmark:types' for type comparison"
     puts "   Use 'rake benchmark:registry' for URL generation"
     puts "   Use 'rake benchmark:hotpaths' for memoization and lookup paths"
+    puts "   Use 'rake benchmark:memory' for memory allocations"
   end
 end
