@@ -10,4 +10,4 @@ gem "rake", "~> 13.3"
 
 gem "minitest", "~> 5.27"
 gem "json-schema", "~> 6.2"
-
+gem "benchmark"
