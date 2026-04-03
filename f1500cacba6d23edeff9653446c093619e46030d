@@ -1,0 +1,27 @@
+lib/purl/package_url.rb
+  57b7139f203e3f78 51-55,58,142,156,170,184,186,192,195,199-200,203,206,437,456-457,489,500-501,517-518,579,586-594,597
+Rakefile
+  57b7139f203e3f78 850-873
+lib/purl/registry_url.rb
+  57b7139f203e3f78 48-58,62,306-307,309,321-331,334,363
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "f1500cacba6d23edeff9653446c093619e46030d",
+  "prompts": {
+    "57b7139f203e3f78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7bc00b3b-6dd5-4a04-a4e1-cc28146f545c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt",
+      "messages": [],
+      "total_additions": 90,
+      "total_deletions": 69,
+      "accepted_lines": 88,
+      "overriden_lines": 0
+    }
+  }
+}
