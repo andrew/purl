@@ -790,12 +790,73 @@ namespace :benchmark do
     puts "✅ Registry URL benchmarks completed!"
   end
   
+  desc "Benchmark hot paths (to_s, equality, known_type?, type_info, supported_types)"
+  task :hotpaths do
+    require "benchmark"
+    require_relative "lib/purl"
+
+    iterations = 10_000
+
+    sample_purls = [
+      "pkg:gem/rails@7.0.0",
+      "pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js",
+      "pkg:maven/org.apache.commons/commons-lang3@3.12.0?classifier=sources",
+      "pkg:cargo/rand@0.7.2",
+      "pkg:pypi/django@4.0.0",
+      "pkg:docker/nginx@sha256:abc123def",
+      "pkg:golang/github.com/gorilla/mux@1.8.0",
+    ]
+
+    parsed = sample_purls.map { |p| Purl.parse(p) }
+
+    puts "Hot Path Benchmarks (#{iterations} iterations)"
+    puts "=" * 50
+
+    Benchmark.bm(28) do |x|
+      x.report("to_s") do
+        iterations.times { parsed.each(&:to_s) }
+      end
+
+      x.report("== (equal)") do
+        pairs = parsed.map { |p| [p, Purl.parse(p.to_s)] }
+        iterations.times { pairs.each { |a, b| a == b } }
+      end
+
+      x.report("hash") do
+        iterations.times { parsed.each(&:hash) }
+      end
+
+      types = %w[gem npm maven cargo pypi docker golang unknown fake_type]
+      x.report("known_type?") do
+        iterations.times { types.each { |t| Purl.known_type?(t) } }
+      end
+
+      info_types = %w[gem npm maven cargo pypi]
+      x.report("type_info") do
+        1_000.times { info_types.each { |t| Purl.type_info(t) } }
+      end
+
+      x.report("all_type_info") do
+        100.times { Purl.all_type_info }
+      end
+
+      x.report("download_supported_types") do
+        iterations.times { Purl::DownloadURL.supported_types }
+      end
+
+      x.report("supported_reverse_types") do
+        iterations.times { Purl::RegistryURL.supported_reverse_types }
+      end
+    end
+  end
+
   desc "Run all benchmarks"
-  task all: [:parse, :types, :registry] do
+  task all: [:parse, :types, :registry, :hotpaths] do
     puts
-    puts "🎉 All benchmarks completed!"
+    puts "All benchmarks completed!"
     puts "   Use 'rake benchmark:parse' for parsing performance"
-    puts "   Use 'rake benchmark:types' for type comparison"  
+    puts "   Use 'rake benchmark:types' for type comparison"
     puts "   Use 'rake benchmark:registry' for URL generation"
+    puts "   Use 'rake benchmark:hotpaths' for memoization and lookup paths"
   end
 end
