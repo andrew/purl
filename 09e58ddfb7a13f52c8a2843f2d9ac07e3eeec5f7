@@ -1,0 +1,23 @@
+Rakefile
+  57b7139f203e3f78 793-852,854,856,858,860
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "09e58ddfb7a13f52c8a2843f2d9ac07e3eeec5f7",
+  "prompts": {
+    "57b7139f203e3f78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7bc00b3b-6dd5-4a04-a4e1-cc28146f545c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt",
+      "messages": [],
+      "total_additions": 64,
+      "total_deletions": 3,
+      "accepted_lines": 64,
+      "overriden_lines": 0
+    }
+  }
+}
