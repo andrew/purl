@@ -104,7 +104,7 @@ module Purl
       @connections ||= {}
       @connections[key] ||= begin
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = true
+        http.use_ssl = (uri.scheme == "https")
         http.read_timeout = @timeout
         http.open_timeout = @timeout
         http.start
@@ -112,14 +112,26 @@ module Purl
       end
     end
 
-    def make_request(uri)
+    def reset_connection(uri)
+      key = "#{uri.host}:#{uri.port}"
+      old = @connections&.delete(key)
+      old&.finish rescue nil
+    end
+
+    def close
+      return unless @connections
+      @connections.each_value { |http| http.finish rescue nil }
+      @connections.clear
+    end
+
+    def make_request(uri, retried: false)
       http = http_for(uri)
 
       request = Net::HTTP::Get.new(uri)
       request["User-Agent"] = @user_agent
 
       response = http.request(request)
-      
+
       case response.code.to_i
       when 200
         JSON.parse(response.body)
@@ -128,6 +140,10 @@ module Purl
       else
         raise LookupError, "API request failed with status #{response.code}"
       end
+    rescue IOError, Errno::EPIPE, Errno::ECONNRESET => e
+      raise LookupError, "Connection failed: #{e.message}" if retried
+      reset_connection(uri)
+      make_request(uri, retried: true)
     rescue JSON::ParserError => e
       raise LookupError, "Failed to parse API response: #{e.message}"
     rescue Timeout::Error, Net::OpenTimeout, Net::ReadTimeout => e

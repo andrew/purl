@@ -2,14 +2,6 @@
 
 require_relative "purl/version"
 require_relative "purl/errors"
-require_relative "purl/package_url"
-require_relative "purl/registry_url"
-require_relative "purl/download_url"
-require_relative "purl/ecosystems_url"
-require_relative "purl/lookup"
-require_relative "purl/lookup_formatter"
-require_relative "purl/advisory"
-require_relative "purl/advisory_formatter"
 
 # The main PURL (Package URL) module providing functionality to parse,
 # validate, and generate package URLs according to the PURL specification.
@@ -37,15 +29,42 @@ require_relative "purl/advisory_formatter"
 module Purl
   # Base error class for all PURL-related errors
   class Error < StandardError; end
-  
+
+  # Deep-freeze a parsed JSON structure so callers don't need defensive dups
+  def self.deep_freeze(obj)
+    case obj
+    when Hash
+      obj.each_value { |v| deep_freeze(v) }
+      obj.freeze
+    when Array
+      obj.each { |v| deep_freeze(v) }
+      obj.freeze
+    when String
+      obj.freeze
+    end
+    obj
+  end
+
   # Load PURL types configuration from JSON file
   def self.load_types_config
     @types_config ||= begin
       config_path = File.join(__dir__, "..", "purl-types.json")
       require "json"
-      JSON.parse(File.read(config_path))
+      deep_freeze(JSON.parse(File.read(config_path)))
     end
   end
+end
+
+require_relative "purl/package_url"
+require_relative "purl/registry_url"
+require_relative "purl/download_url"
+require_relative "purl/ecosystems_url"
+require_relative "purl/lookup"
+require_relative "purl/lookup_formatter"
+require_relative "purl/advisory"
+require_relative "purl/advisory_formatter"
+
+module Purl
 
   # Known PURL types loaded from JSON configuration
   KNOWN_TYPES = load_types_config["types"].keys.sort.freeze
@@ -197,8 +216,8 @@ module Purl
   def self.type_config(type)
     config = load_types_config["types"][type.to_s.downcase]
     return nil unless config
-    
-    config.dup # Return a copy to prevent modification
+
+    config
   end
 
   # Get human-readable description for a type

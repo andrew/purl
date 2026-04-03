@@ -7,11 +7,7 @@ module Purl
     # Load registry patterns from JSON configuration
     def self.load_registry_patterns
       @registry_patterns ||= begin
-        config_path = File.join(__dir__, "..", "..", "purl-types.json")
-        require "json"
-        config = JSON.parse(File.read(config_path))
-        # Cache this as the shared types config for Purl module too
-        Purl.instance_variable_set(:@types_config, config) unless Purl.instance_variable_get(:@types_config)
+        config = Purl.load_types_config
         patterns = {}
         
         config["types"].each do |type, type_config|

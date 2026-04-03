@@ -583,18 +583,17 @@ module Purl
       # Other MLflow repositories (like Azure ML) are case sensitive - no normalization needed
     end
 
-    NAMESPACE_REQUIRED_TYPES = begin
-      require "json"
-      require "set"
-      config_path = File.join(File.dirname(__FILE__), "..", "..", "purl-types.json")
-      config = JSON.parse(File.read(config_path))
-      types = config["types"].select { |_, v| v["namespace_requirement"] == "required" }.keys
-      Set.new(types).freeze
+    def self.namespace_required_types
+      @namespace_required_types ||= begin
+        config = Purl.load_types_config
+        types = config["types"].select { |_, v| v["namespace_requirement"] == "required" }.keys
+        Set.new(types).freeze
+      end
     end
 
     def namespace_required_for_type?(type)
       return false unless type
-      NAMESPACE_REQUIRED_TYPES.include?(type.downcase)
+      self.class.namespace_required_types.include?(type.downcase)
     end
 
     def self.purl_types_data
