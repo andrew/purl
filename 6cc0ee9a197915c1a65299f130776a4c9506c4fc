@@ -1,0 +1,23 @@
+Gemfile
+  57b7139f203e3f78 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "6cc0ee9a197915c1a65299f130776a4c9506c4fc",
+  "prompts": {
+    "57b7139f203e3f78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7bc00b3b-6dd5-4a04-a4e1-cc28146f545c",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
