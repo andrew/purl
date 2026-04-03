@@ -223,6 +223,8 @@ module Purl
     #   purl = PackageURL.new(type: "gem", name: "rails", version: "7.0.0")
     #   puts purl.to_s  # "pkg:gem/rails@7.0.0"
     def to_s
+      return @canonical if @canonical
+
       parts = ["pkg:", type.downcase]
       
       if namespace
@@ -236,11 +238,10 @@ module Purl
       parts << "/" << URI.encode_www_form_component(name)
       
       if version
-        # Special handling for version encoding - don't encode colon in certain contexts
         encoded_version = case type&.downcase
         when "docker"
           # Docker versions with sha256: should not encode the colon
-          version.gsub("sha256:", "sha256:")
+          version
         else
           URI.encode_www_form_component(version)
         end
@@ -268,7 +269,7 @@ module Purl
         parts << "?" << query_parts.join("&")
       end
       
-      parts.join
+      @canonical = parts.join.freeze
     end
 
     # Convert the PackageURL to a hash representation
@@ -595,14 +596,7 @@ module Purl
     end
 
     def self.purl_types_data
-      @purl_types_data ||= begin
-        require "json"
-        types_file = File.join(File.dirname(__FILE__), "..", "..", "purl-types.json")
-        JSON.parse(File.read(types_file))
-      rescue
-        # Fallback to empty structure if file can't be read
-        {"types" => {}}
-      end
+      Purl.load_types_config
     end
 
     def self.parse_qualifiers(query_string)

@@ -7,10 +7,11 @@ module Purl
     # Load registry patterns from JSON configuration
     def self.load_registry_patterns
       @registry_patterns ||= begin
-        # Load extended registry configs
         config_path = File.join(__dir__, "..", "..", "purl-types.json")
         require "json"
         config = JSON.parse(File.read(config_path))
+        # Cache this as the shared types config for Purl module too
+        Purl.instance_variable_set(:@types_config, config) unless Purl.instance_variable_get(:@types_config)
         patterns = {}
         
         config["types"].each do |type, type_config|
@@ -58,11 +59,7 @@ module Purl
 
     # Load types config (needed for accessing default_registry)
     def self.load_types_config
-      @types_config ||= begin
-        config_path = File.join(__dir__, "..", "..", "purl-types.json")
-        require "json"
-        JSON.parse(File.read(config_path))
-      end
+      Purl.load_types_config
     end
 
     def self.build_generation_lambda(type, config, default_registry = nil)
@@ -372,8 +369,10 @@ module Purl
       )
     end
 
+    SUPPORTED_REVERSE_TYPES = REGISTRY_PATTERNS.select { |_, config| config[:reverse_regex] }.keys.sort.freeze
+
     def self.supported_reverse_types
-      REGISTRY_PATTERNS.select { |_, config| config[:reverse_regex] }.keys.sort
+      SUPPORTED_REVERSE_TYPES
     end
 
     def self.route_patterns_for(type)

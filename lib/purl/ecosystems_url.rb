@@ -3,6 +3,7 @@
 module Purl
   class EcosystemsURL
     API_BASE = "https://packages.ecosyste.ms/api/v1"
+    NAMESPACED_PACKAGE_TYPES = %w[npm composer maven golang swift elm clojars].freeze
 
     def self.registry_name(purl)
       new(purl).registry_name
@@ -71,7 +72,7 @@ module Purl
     end
 
     def namespaced_package_types
-      %w[npm composer maven golang swift elm clojars]
+      NAMESPACED_PACKAGE_TYPES
     end
 
     def encode_path_segment(str)

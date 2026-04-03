@@ -49,6 +49,10 @@ module Purl
 
   # Known PURL types loaded from JSON configuration
   KNOWN_TYPES = load_types_config["types"].keys.sort.freeze
+
+  # Set for O(1) lookups
+  require "set"
+  KNOWN_TYPES_SET = Set.new(KNOWN_TYPES).freeze
   
   # Convenience method for parsing PURL strings
   #
@@ -124,7 +128,7 @@ module Purl
   #   Purl.known_type?("gem")     # true
   #   Purl.known_type?("unknown") # false
   def self.known_type?(type)
-    KNOWN_TYPES.include?(type.to_s.downcase)
+    KNOWN_TYPES_SET.include?(type.to_s.downcase)
   end
 
   # Get comprehensive type information including registry support
@@ -145,12 +149,13 @@ module Purl
   #   puts info[:description]  # "Ruby gems from RubyGems.org"
   def self.type_info(type)
     normalized_type = type.to_s.downcase
+    config = type_config(normalized_type)
     {
       type: normalized_type,
       known: known_type?(normalized_type),
-      description: type_description(normalized_type),
-      default_registry: default_registry(normalized_type),
-      examples: type_examples(normalized_type),
+      description: config ? config["description"] : nil,
+      default_registry: config ? config["default_registry"] : nil,
+      examples: config ? (config["examples"] || []) : [],
       registry_url_generation: RegistryURL.supports?(normalized_type),
       reverse_parsing: RegistryURL.supported_reverse_types.include?(normalized_type),
       download_url_generation: DownloadURL.supports?(normalized_type),

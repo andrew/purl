@@ -99,15 +99,25 @@ module Purl
 
     private
 
+    def http_for(uri)
+      key = "#{uri.host}:#{uri.port}"
+      @connections ||= {}
+      @connections[key] ||= begin
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        http.read_timeout = @timeout
+        http.open_timeout = @timeout
+        http.start
+        http
+      end
+    end
+
     def make_request(uri)
-      http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
-      http.read_timeout = @timeout
-      http.open_timeout = @timeout
-      
+      http = http_for(uri)
+
       request = Net::HTTP::Get.new(uri)
       request["User-Agent"] = @user_agent
-      
+
       response = http.request(request)
       
       case response.code.to_i
