@@ -1,0 +1,25 @@
+Rakefile
+  887e50ac80d47588 877-924,933
+Gemfile
+  887e50ac80d47588 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "7d1c81e20a707e3b193a2ba6fa37dacac513f621",
+  "prompts": {
+    "887e50ac80d47588": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c3e03438-965d-401f-81f1-e7f6164de940",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Andrew Nesbitt",
+      "messages": [],
+      "total_additions": 51,
+      "total_deletions": 1,
+      "accepted_lines": 50,
+      "overriden_lines": 0
+    }
+  }
+}
