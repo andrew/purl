@@ -159,12 +159,10 @@ module Purl
     NAMESPACE_REQUIRED_TYPES = %w[maven elm github gitlab bitbucket luarocks swift].freeze
 
     def self.supported_types
-      DOWNLOAD_PATTERNS.keys.select do |k|
+      @supported_types ||= DOWNLOAD_PATTERNS.keys.select do |k|
         pattern = DOWNLOAD_PATTERNS[k]
-        # Skip types with notes (they're not really supported)
         next false if pattern[:note]
 
-        # Test with appropriate namespace for types that need it
         namespace = if NAMESPACE_REQUIRED_TYPES.include?(k)
           k == "swift" ? "github.com/test" : "test"
         end
@@ -174,7 +172,7 @@ module Purl
         rescue
           false
         end
-      end.sort
+      end.sort.freeze
     end
 
     def self.supports?(type)

@@ -7,10 +7,7 @@ module Purl
     # Load registry patterns from JSON configuration
     def self.load_registry_patterns
       @registry_patterns ||= begin
-        # Load extended registry configs
-        config_path = File.join(__dir__, "..", "..", "purl-types.json")
-        require "json"
-        config = JSON.parse(File.read(config_path))
+        config = Purl.load_types_config
         patterns = {}
         
         config["types"].each do |type, type_config|
@@ -44,9 +41,21 @@ module Purl
         end
       end
       
+      # Precompute domain-agnostic regex for from_url with type: hint
+      domain_agnostic_regex = nil
+      if reverse_regex
+        original_source = reverse_regex.source
+        if config["reverse_regex"].start_with?("/")
+          domain_agnostic_regex = Regexp.new("^https?://[^/]+" + config["reverse_regex"])
+        elsif original_source =~ /\^https?:\/\/[^\/]+(.+)$/
+          domain_agnostic_regex = Regexp.new("^https?://[^/]+" + $1)
+        end
+      end
+
       {
         base_url: config["base_url"] || (default_registry ? default_registry + config["path_template"]&.split('/:').first : nil),
         reverse_regex: reverse_regex,
+        domain_agnostic_regex: domain_agnostic_regex,
         pattern: build_generation_lambda(type, config, default_registry),
         reverse_parser: reverse_regex ? build_reverse_parser(type, config) : nil,
         uri_template: config["uri_template"] ? Addressable::Template.new(config["uri_template"]) : nil,
@@ -58,11 +67,7 @@ module Purl
 
     # Load types config (needed for accessing default_registry)
     def self.load_types_config
-      @types_config ||= begin
-        config_path = File.join(__dir__, "..", "..", "purl-types.json")
-        require "json"
-        JSON.parse(File.read(config_path))
-      end
+      Purl.load_types_config
     end
 
     def self.build_generation_lambda(type, config, default_registry = nil)
@@ -294,8 +299,10 @@ module Purl
       new(purl).generate(base_url: base_url)
     end
 
+    SUPPORTED_TYPES = REGISTRY_PATTERNS.keys.sort.freeze
+
     def self.supported_types
-      REGISTRY_PATTERNS.keys.sort
+      SUPPORTED_TYPES
     end
 
     def self.supports?(type)
@@ -307,39 +314,20 @@ module Purl
       if type
         normalized_type = type.to_s.downcase
         config = REGISTRY_PATTERNS[normalized_type]
-        
-        if config && config[:reverse_regex] && config[:reverse_parser]
-          # Create a domain-agnostic version of the regex by replacing the base domain
-          original_regex = config[:reverse_regex].source
-          
-          # For simplified JSON patterns that start with /, create domain-agnostic regex
-          domain_agnostic_regex = nil
-          if original_regex.start_with?("/")
-            # Domain-agnostic pattern - match any domain with this path
-            domain_agnostic_regex = Regexp.new("^https?://[^/]+" + original_regex)
-          else
-            # Legacy full regex pattern
-            if original_regex =~ /\^https?:\/\/[^\/]+(.+)$/
-              path_pattern = $1
-              # Create domain-agnostic regex that matches any domain with the same path structure
-              domain_agnostic_regex = Regexp.new("^https?://[^/]+" + path_pattern)
-            end
-          end
-            
-          if domain_agnostic_regex
-            match = registry_url.match(domain_agnostic_regex)
-            if match
-              parsed_data = config[:reverse_parser].call(match)
-              return PackageURL.new(
-                type: parsed_data[:type],
-                namespace: parsed_data[:namespace],
-                name: parsed_data[:name],
-                version: parsed_data[:version]
-              )
-            end
+
+        if config && config[:domain_agnostic_regex] && config[:reverse_parser]
+          match = registry_url.match(config[:domain_agnostic_regex])
+          if match
+            parsed_data = config[:reverse_parser].call(match)
+            return PackageURL.new(
+              type: parsed_data[:type],
+              namespace: parsed_data[:namespace],
+              name: parsed_data[:name],
+              version: parsed_data[:version]
+            )
           end
         end
-        
+
         # If specified type didn't work, fall through to normal domain-matching logic
       end
       
@@ -368,12 +356,14 @@ module Purl
       
       raise UnsupportedTypeError.new(
         error_message,
-        supported_types: REGISTRY_PATTERNS.keys.select { |k| REGISTRY_PATTERNS[k][:reverse_regex] }
+        supported_types: SUPPORTED_REVERSE_TYPES
       )
     end
 
+    SUPPORTED_REVERSE_TYPES = REGISTRY_PATTERNS.select { |_, config| config[:reverse_regex] }.keys.sort.freeze
+
     def self.supported_reverse_types
-      REGISTRY_PATTERNS.select { |_, config| config[:reverse_regex] }.keys.sort
+      SUPPORTED_REVERSE_TYPES
     end
 
     def self.route_patterns_for(type)

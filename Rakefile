@@ -790,12 +790,146 @@ namespace :benchmark do
     puts "✅ Registry URL benchmarks completed!"
   end
   
+  desc "Benchmark hot paths (to_s, equality, known_type?, type_info, supported_types)"
+  task :hotpaths do
+    require "benchmark"
+    require_relative "lib/purl"
+
+    iterations = 10_000
+
+    sample_purls = [
+      "pkg:gem/rails@7.0.0",
+      "pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js",
+      "pkg:maven/org.apache.commons/commons-lang3@3.12.0?classifier=sources",
+      "pkg:cargo/rand@0.7.2",
+      "pkg:pypi/django@4.0.0",
+      "pkg:docker/nginx@sha256:abc123def",
+      "pkg:golang/github.com/gorilla/mux@1.8.0",
+    ]
+
+    parsed = sample_purls.map { |p| Purl.parse(p) }
+
+    puts "Hot Path Benchmarks (#{iterations} iterations)"
+    puts "=" * 50
+
+    Benchmark.bm(28) do |x|
+      x.report("to_s") do
+        iterations.times { parsed.each(&:to_s) }
+      end
+
+      x.report("== (equal)") do
+        pairs = parsed.map { |p| [p, Purl.parse(p.to_s)] }
+        iterations.times { pairs.each { |a, b| a == b } }
+      end
+
+      x.report("hash") do
+        iterations.times { parsed.each(&:hash) }
+      end
+
+      types = %w[gem npm maven cargo pypi docker golang unknown fake_type]
+      x.report("known_type?") do
+        iterations.times { types.each { |t| Purl.known_type?(t) } }
+      end
+
+      info_types = %w[gem npm maven cargo pypi]
+      x.report("type_info") do
+        1_000.times { info_types.each { |t| Purl.type_info(t) } }
+      end
+
+      x.report("all_type_info") do
+        100.times { Purl.all_type_info }
+      end
+
+      x.report("download_supported_types") do
+        iterations.times { Purl::DownloadURL.supported_types }
+      end
+
+      x.report("supported_reverse_types") do
+        iterations.times { Purl::RegistryURL.supported_reverse_types }
+      end
+
+      x.report("registry_supported_types") do
+        iterations.times { Purl::RegistryURL.supported_types }
+      end
+
+      x.report("parse (simple)") do
+        iterations.times { Purl.parse("pkg:gem/rails@7.0.0") }
+      end
+
+      x.report("parse (complex)") do
+        iterations.times { Purl.parse("pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js") }
+      end
+
+      x.report("parse (namespaced)") do
+        iterations.times { Purl.parse("pkg:maven/org.apache.commons/commons-lang3@3.12.0") }
+      end
+
+      x.report("from_url (domain match)") do
+        1_000.times { Purl.from_registry_url("https://rubygems.org/gems/rails") }
+      end
+
+      x.report("from_url (type hint)") do
+        1_000.times { Purl.from_registry_url("https://gems.internal.com/gems/rails", type: "gem") }
+      end
+    end
+  end
+
+  desc "Benchmark memory allocations for hot paths"
+  task :memory do
+    require "memory_profiler"
+    require_relative "lib/purl"
+
+    sample_purls = [
+      "pkg:gem/rails@7.0.0",
+      "pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js",
+      "pkg:maven/org.apache.commons/commons-lang3@3.12.0?classifier=sources",
+      "pkg:cargo/rand@0.7.2",
+      "pkg:pypi/django@4.0.0",
+      "pkg:docker/nginx@sha256:abc123def",
+      "pkg:golang/github.com/gorilla/mux@1.8.0",
+    ]
+
+    parsed = sample_purls.map { |p| Purl.parse(p) }
+
+    benchmarks = {
+      "parse (simple)" => -> { Purl.parse("pkg:gem/rails@7.0.0") },
+      "parse (complex)" => -> { Purl.parse("pkg:npm/@babel/core@7.20.0?arch=x64&dev=true#lib/index.js") },
+      "parse (namespaced)" => -> { Purl.parse("pkg:maven/org.apache.commons/commons-lang3@3.12.0") },
+      "to_s" => -> { parsed.each(&:to_s) },
+      "to_s (cold)" => -> { sample_purls.map { |p| Purl.parse(p) }.each(&:to_s) },
+      "== (equal)" => -> { parsed.each_cons(2) { |a, b| a == b } },
+      "known_type?" => -> { %w[gem npm maven cargo pypi].each { |t| Purl.known_type?(t) } },
+      "type_info" => -> { %w[gem npm maven].each { |t| Purl.type_info(t) } },
+      "supported_types" => -> { Purl::RegistryURL.supported_types },
+      "supported_reverse_types" => -> { Purl::RegistryURL.supported_reverse_types },
+      "download_supported_types" => -> { Purl::DownloadURL.supported_types },
+      "from_url (domain match)" => -> { Purl.from_registry_url("https://rubygems.org/gems/rails") },
+      "from_url (type hint)" => -> { Purl.from_registry_url("https://gems.internal.com/gems/rails", type: "gem") },
+    }
+
+    puts "Memory Allocation Benchmarks"
+    puts "=" * 70
+    printf "%-30s %10s %10s %10s\n", "Benchmark", "Objects", "Memsize", "Strings"
+    puts "-" * 70
+
+    benchmarks.each do |name, block|
+      report = MemoryProfiler.report { 100.times { block.call } }
+      printf "%-30s %10d %10d %10d\n",
+        name,
+        report.total_allocated,
+        report.total_allocated_memsize,
+        report.strings_allocated.size
+    end
+  end
+
   desc "Run all benchmarks"
-  task all: [:parse, :types, :registry] do
+  task all: [:parse, :types, :registry, :hotpaths] do
     puts
-    puts "🎉 All benchmarks completed!"
+    puts "All benchmarks completed!"
     puts "   Use 'rake benchmark:parse' for parsing performance"
-    puts "   Use 'rake benchmark:types' for type comparison"  
+    puts "   Use 'rake benchmark:types' for type comparison"
     puts "   Use 'rake benchmark:registry' for URL generation"
+    puts "   Use 'rake benchmark:hotpaths' for memoization and lookup paths"
+    puts "   Use 'rake benchmark:memory' for memory allocations"
   end
 end

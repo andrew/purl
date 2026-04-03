@@ -662,6 +662,73 @@ class TestPurl < Minitest::Test
     
   end
 
+  # Performance-related tests
+
+  def test_types_config_loaded_once
+    # All config consumers should reference the same underlying data
+    purl_config = Purl.load_types_config
+    package_url_config = Purl::PackageURL.purl_types_data
+
+    assert_equal purl_config, package_url_config
+    # They should be the exact same object (not re-parsed copies)
+    assert_same purl_config, package_url_config
+  end
+
+  def test_to_s_memoization
+    purl = Purl::PackageURL.parse("pkg:npm/@babel/core@7.0.0?arch=x64#lib/index.js")
+    first_call = purl.to_s
+    second_call = purl.to_s
+    assert_equal first_call, second_call
+    # Should return the exact same string object
+    assert_same first_call, second_call
+  end
+
+  def test_to_s_memoization_not_shared_via_with
+    original = Purl::PackageURL.parse("pkg:gem/rails@7.0.0")
+    modified = original.with(version: "7.1.0")
+    refute_equal original.to_s, modified.to_s
+  end
+
+  def test_equality_uses_memoized_to_s
+    purl1 = Purl::PackageURL.parse("pkg:gem/rails@7.0.0")
+    purl2 = Purl::PackageURL.parse("pkg:gem/rails@7.0.0")
+    assert_equal purl1, purl2
+    assert_equal purl1.hash, purl2.hash
+  end
+
+  def test_docker_sha256_version_not_encoded
+    purl = Purl::PackageURL.new(type: "docker", name: "nginx", version: "sha256:abc123")
+    result = purl.to_s
+    assert_includes result, "@sha256:abc123"
+    refute_includes result, "sha256%3A"
+  end
+
+  def test_ecosystems_url_namespaced_types
+    # Verify namespaced type handling works for npm
+    purl = Purl::PackageURL.new(type: "npm", namespace: "@babel", name: "core", version: "7.0.0")
+    url = Purl::EcosystemsURL.package_api_url(purl)
+    assert_includes url, "%40babel%2Fcore" if url
+
+    # Verify non-namespaced type uses name only
+    gem_purl = Purl::PackageURL.new(type: "gem", name: "rails", version: "7.0.0")
+    gem_url = Purl::EcosystemsURL.package_api_url(gem_purl)
+    assert_includes gem_url, "/rails" if gem_url
+  end
+
+  def test_download_supported_types_cached
+    first = Purl.download_supported_types
+    second = Purl.download_supported_types
+    assert_equal first, second
+  end
+
+  def test_supported_reverse_types_cached
+    first = Purl::RegistryURL.supported_reverse_types
+    second = Purl::RegistryURL.supported_reverse_types
+    assert_equal first, second
+    # Should be the exact same frozen object
+    assert_same first, second
+  end
+
   def test_purl_types_examples_validation
     require "json"
     
