@@ -9,6 +9,8 @@ module Purl
   # Provides lookup functionality for packages using the ecosyste.ms API
   class Lookup
     ECOSYSTE_MS_API_BASE = "https://packages.ecosyste.ms/api/v1"
+    ALLOWED_HOSTS = ["packages.ecosyste.ms", "repos.ecosyste.ms"].freeze
+    MAX_RESPONSE_BYTES = 10 * 1024 * 1024
     
     # Initialize a new Lookup instance
     #
@@ -100,7 +102,7 @@ module Purl
     private
 
     def http_for(uri)
-      key = "#{uri.host}:#{uri.port}"
+      key = connection_key(uri)
       @connections ||= {}
       @connections[key] ||= begin
         http = Net::HTTP.new(uri.host, uri.port)
@@ -113,9 +115,12 @@ module Purl
     end
 
     def reset_connection(uri)
-      key = "#{uri.host}:#{uri.port}"
-      old = @connections&.delete(key)
+      old = @connections&.delete(connection_key(uri))
       old&.finish rescue nil
+    end
+
+    def connection_key(uri)
+      "#{uri.scheme}://#{uri.host}:#{uri.port}"
     end
 
     def close
@@ -125,6 +130,10 @@ module Purl
     end
 
     def make_request(uri, retried: false)
+      unless uri.scheme == "https" && ALLOWED_HOSTS.include?(uri.host)
+        raise LookupError, "Refusing request to disallowed host: #{uri.host}"
+      end
+
       http = http_for(uri)
 
       request = Net::HTTP::Get.new(uri)
@@ -134,7 +143,11 @@ module Purl
 
       case response.code.to_i
       when 200
-        JSON.parse(response.body)
+        body = response.body
+        if body.bytesize > MAX_RESPONSE_BYTES
+          raise LookupError, "Response too large (#{body.bytesize} bytes)"
+        end
+        JSON.parse(body)
       when 404
         nil
       else
