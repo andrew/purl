@@ -9,6 +9,8 @@ module Purl
   # Provides advisory lookup functionality for packages using the advisories.ecosyste.ms API
   class Advisory
     ADVISORIES_API_BASE = "https://advisories.ecosyste.ms/api/v1"
+    ALLOWED_HOSTS = ["advisories.ecosyste.ms"].freeze
+    MAX_RESPONSE_BYTES = 10 * 1024 * 1024
 
     # Initialize a new Advisory instance
     #
@@ -55,6 +57,10 @@ module Purl
     private
 
     def make_request(uri)
+      unless uri.scheme == "https" && ALLOWED_HOSTS.include?(uri.host)
+        raise AdvisoryError, "Refusing request to disallowed host: #{uri.host}"
+      end
+
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = true
       http.read_timeout = @timeout
@@ -67,7 +73,11 @@ module Purl
 
       case response.code.to_i
       when 200
-        JSON.parse(response.body)
+        body = response.body
+        if body.bytesize > MAX_RESPONSE_BYTES
+          raise AdvisoryError, "Response too large (#{body.bytesize} bytes)"
+        end
+        JSON.parse(body)
       when 404
         []
       else
