@@ -6,7 +6,7 @@ source "https://rubygems.org"
 gemspec
 
 gem "irb"
-gem "rake", "~> 13.3"
+gem "rake", "~> 13.4"
 
 gem "minitest", "~> 5.27"
 gem "json-schema", "~> 6.2"
