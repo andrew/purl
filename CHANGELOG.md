@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-04-13
+
+### Security
+- `Lookup` only sends requests over HTTPS to `packages.ecosyste.ms` and `repos.ecosyste.ms`, and `Advisory` only to `advisories.ecosyste.ms`
+- Responses larger than 10MB are rejected
+- Cached HTTP connections are keyed by scheme, host and port
+
+## [1.8.0] - 2026-04-03
+
+### Changed
+- Performance improvements: `purl-types.json` is parsed once and deep-frozen, `known_type?` and namespace-required checks use sets, `to_s` is memoized, supported type lists are cached, parsing skips decoding when a component has no escapes, and `from_registry_url` precomputes its type-hint regexes
+- `Lookup` reuses HTTP connections, retries once on a stale connection, and has a `close` method
+
+### Added
+- `rake benchmark:hotpaths` and `rake benchmark:memory` tasks
+
 ## [1.7.1] - 2026-01-14
 
 ### Added
