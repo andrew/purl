@@ -23,152 +23,37 @@ namespace :spec do
   task :help do
     puts "🔧 PURL Specification Tasks"
     puts "=" * 30
-    puts "rake spec:update      - Fetch latest test cases from official PURL spec repository"
-    puts "rake spec:stats       - Show statistics about current test suite data"
+    puts "rake spec:update      - Update the purl-spec submodule to the latest upstream commit"
+    puts "rake spec:stats       - Show statistics about the purl-spec test cases"
     puts "rake spec:compliance  - Run all compliance tests against the official test suite"
-    puts "rake spec:debug       - Show detailed info about failing test cases"
     puts "rake spec:types       - Show information about all PURL types and their support"
     puts "rake spec:verify_types - Verify our types list against the official specification"
-    puts "rake spec:validate_schemas - Validate JSON files against their schemas"
     puts "rake spec:validate_examples - Validate all PURL examples in purl-types.json"
     puts "rake spec:help        - Show this help message"
     puts
-    puts "Example workflow:"
-    puts "  1. rake spec:update     # Get latest test cases"
-    puts "  2. rake spec:stats      # Review test suite composition"
-    puts "  3. rake spec:compliance # Run compliance tests"
-    puts "  4. rake spec:debug      # Debug any failures"
-    puts
-    puts "The test suite data is stored in test-suite-data.json at the project root."
+    puts "The official test cases are read from the purl-spec submodule (purl-spec/tests)."
   end
 
-  desc "Import/update official PURL specification test cases"
+  desc "Update the purl-spec submodule to the latest upstream commit"
   task :update do
-    require "net/http"
-    require "uri"
-    require "json"
-    require "fileutils"
-    
-    puts "Fetching official PURL specification test cases..."
-    
-    # URL for the official test suite data
-    url = "https://raw.githubusercontent.com/package-url/purl-spec/master/test-suite-data.json"
-    test_file_path = File.join(__dir__, "test-suite-data.json")
-    backup_path = "#{test_file_path}.backup"
-    
-    begin
-      # Create backup of existing file if it exists
-      if File.exist?(test_file_path)
-        puts "Creating backup of existing test file..."
-        FileUtils.cp(test_file_path, backup_path)
-      end
-      
-      # Fetch the latest test data
-      uri = URI(url)
-      response = Net::HTTP.get_response(uri)
-      
-      if response.code == "200"
-        # Validate that we got valid JSON
-        test_data = JSON.parse(response.body)
-        
-        # Write the new test data
-        File.write(test_file_path, response.body)
-        
-        puts "✅ Successfully updated test suite data!"
-        puts "   - Test cases: #{test_data.length}"
-        puts "   - File: #{test_file_path}"
-        
-        # Remove backup if update was successful
-        File.delete(backup_path) if File.exist?(backup_path)
-        
-        # Show summary of test case types
-        types = test_data.group_by { |tc| tc["type"] || "unknown" }.transform_values(&:count)
-        puts "\n📊 Test case distribution by package type:"
-        types.sort_by { |type, _| type.to_s }.each do |type, count|
-          puts "   #{type}: #{count} cases"
-        end
-        
-        # Show invalid vs valid cases
-        invalid_count = test_data.count { |tc| tc["is_invalid"] }
-        valid_count = test_data.count { |tc| !tc["is_invalid"] }
-        puts "\n📋 Test case categories:"
-        puts "   Valid cases: #{valid_count}"
-        puts "   Invalid cases: #{invalid_count}"
-        
-      else
-        raise "HTTP request failed with status #{response.code}: #{response.message}"
-      end
-      
-    rescue => e
-      puts "❌ Failed to update test suite data: #{e.message}"
-      
-      # Restore backup if update failed
-      if File.exist?(backup_path)
-        puts "Restoring backup..."
-        FileUtils.mv(backup_path, test_file_path)
-      end
-      
-      exit 1
-    end
+    sh "git submodule update --init --remote purl-spec"
   end
-  
-  desc "Show current test suite statistics"
+
+  desc "Show statistics about the purl-spec test cases"
   task :stats do
     require "json"
-    
-    test_file_path = File.join(__dir__, "test-suite-data.json")
-    
-    unless File.exist?(test_file_path)
-      puts "❌ Test suite data file not found. Run 'rake spec:update' first."
-      exit 1
+
+    files = Dir[File.join(__dir__, "purl-spec", "tests", "**", "*.json")].sort
+    abort "No purl-spec test files found; run `git submodule update --init`" if files.empty?
+
+    cases = files.flat_map { |file| JSON.parse(File.read(file)).fetch("tests") }
+    puts "purl-spec test cases: #{cases.length} in #{files.length} files"
+    cases.group_by { |test_case| test_case["test_type"] }.sort.each do |test_type, list|
+      puts "  #{test_type}: #{list.length}"
     end
-    
-    begin
-      test_data = JSON.parse(File.read(test_file_path))
-      
-      puts "📊 PURL Test Suite Statistics"
-      puts "=" * 40
-      puts "Total test cases: #{test_data.length}"
-      puts "File location: #{test_file_path}"
-      puts "File size: #{File.size(test_file_path)} bytes"
-      puts "Last modified: #{File.mtime(test_file_path)}"
-      
-      # Distribution by package type
-      puts "\n📦 Distribution by package type:"
-      types = test_data.group_by { |tc| tc["type"] || "unknown" }.transform_values(&:count)
-      types.sort_by { |_, count| -count }.each do |type, count|
-        percentage = (count.to_f / test_data.length * 100).round(1)
-        puts "   #{type.to_s.ljust(12)} #{count.to_s.rjust(3)} cases (#{percentage}%)"
-      end
-      
-      # Valid vs invalid cases
-      invalid_count = test_data.count { |tc| tc["is_invalid"] }
-      valid_count = test_data.count { |tc| !tc["is_invalid"] }
-      puts "\n✅ Test case validity:"
-      puts "   Valid cases:   #{valid_count} (#{(valid_count.to_f / test_data.length * 100).round(1)}%)"
-      puts "   Invalid cases: #{invalid_count} (#{(invalid_count.to_f / test_data.length * 100).round(1)}%)"
-      
-      # Cases with different components
-      has_namespace = test_data.count { |tc| tc["namespace"] }
-      has_version = test_data.count { |tc| tc["version"] }
-      has_qualifiers = test_data.count { |tc| tc["qualifiers"] && !tc["qualifiers"].empty? }
-      has_subpath = test_data.count { |tc| tc["subpath"] }
-      
-      puts "\n🔧 Component usage:"
-      puts "   With namespace:  #{has_namespace} cases"
-      puts "   With version:    #{has_version} cases"
-      puts "   With qualifiers: #{has_qualifiers} cases"
-      puts "   With subpath:    #{has_subpath} cases"
-      
-    rescue JSON::ParserError => e
-      puts "❌ Failed to parse test suite data: #{e.message}"
-      exit 1
-    rescue => e
-      puts "❌ Error reading test suite data: #{e.message}"
-      exit 1
-    end
+    puts "  expected to fail: #{cases.count { |test_case| test_case["expected_failure"] }}"
   end
-  
+
   desc "Run compliance tests against the official test suite"
   task :compliance do
     puts "Running PURL specification compliance tests..."
@@ -293,202 +178,6 @@ namespace :spec do
         puts "\n   #{type.upcase}:"
         patterns.each { |pattern| puts "     #{pattern}" }
       end
-    end
-  end
-
-  desc "Show failing test cases for debugging"
-  task :debug do
-    require "json"
-    require_relative "lib/purl"
-    
-    test_file_path = File.join(__dir__, "test-suite-data.json")
-    
-    unless File.exist?(test_file_path)
-      puts "❌ Test suite data file not found. Run 'rake spec:update' first."
-      exit 1
-    end
-    
-    test_data = JSON.parse(File.read(test_file_path))
-    
-    puts "🔍 Debugging failing test cases..."
-    puts "=" * 50
-    
-    failed_cases = []
-    
-    test_data.each_with_index do |test_case, index|
-      description = test_case["description"]
-      purl_string = test_case["purl"]
-      is_invalid = test_case["is_invalid"]
-      
-      begin
-        if is_invalid
-          begin
-            Purl::PackageURL.parse(purl_string)
-            failed_cases << {
-              index: index + 1,
-              description: description,
-              purl: purl_string,
-              error: "Expected parsing to fail but it succeeded",
-              type: "validation"
-            }
-          rescue Purl::Error
-            # Correctly failed - this is expected
-          end
-        else
-          purl = Purl::PackageURL.parse(purl_string)
-          
-          # Check if canonical form matches expected
-          expected_canonical = test_case["canonical_purl"]
-          if expected_canonical && purl.to_s != expected_canonical
-            failed_cases << {
-              index: index + 1,
-              description: description,
-              purl: purl_string,
-              error: "Canonical mismatch: expected '#{expected_canonical}', got '#{purl.to_s}'",
-              type: "canonical"
-            }
-          end
-          
-          # Check component mismatches
-          %w[type namespace name version qualifiers subpath].each do |component|
-            expected = test_case[component]
-            actual = purl.send(component)
-            
-            if expected != actual
-              failed_cases << {
-                index: index + 1,
-                description: description,
-                purl: purl_string,
-                error: "#{component.capitalize} mismatch: expected #{expected.inspect}, got #{actual.inspect}",
-                type: "component"
-              }
-              break  # Only report first mismatch per test case
-            end
-          end
-        end
-      rescue => e
-        failed_cases << {
-          index: index + 1,
-          description: description,
-          purl: purl_string,
-          error: "#{e.class}: #{e.message}",
-          type: "exception"
-        }
-      end
-    end
-    
-    if failed_cases.empty?
-      puts "🎉 All test cases are passing!"
-    else
-      puts "❌ Found #{failed_cases.length} failing test cases:\n"
-      
-      # Group by failure type
-      failed_cases.group_by { |fc| fc[:type] }.each do |failure_type, cases|
-        puts "#{failure_type.upcase} FAILURES (#{cases.length}):"
-        puts "-" * 30
-        
-        cases.first(5).each do |failed_case|  # Show first 5 of each type
-          puts "Case #{failed_case[:index]}: #{failed_case[:description]}"
-          puts "  PURL: #{failed_case[:purl]}"
-          puts "  Error: #{failed_case[:error]}"
-          puts
-        end
-        
-        if cases.length > 5
-          puts "  ... and #{cases.length - 5} more #{failure_type} failures\n"
-        end
-      end
-      
-      success_rate = ((test_data.length - failed_cases.length).to_f / test_data.length * 100).round(1)
-      puts "Overall success rate: #{success_rate}% (#{test_data.length - failed_cases.length}/#{test_data.length})"
-    end
-  end
-
-  desc "Validate JSON files against their schemas"
-  task :validate_schemas do
-    require "json"
-    
-    begin
-      require "json-schema"
-    rescue LoadError => e
-      puts "❌ json-schema gem not available: #{e.message}"
-      puts "   Install with: gem install json-schema"
-      exit 1
-    end
-    
-    puts "🔍 Validating JSON files against schemas..."
-    puts "=" * 50
-    
-    schemas_dir = File.join(__dir__, "schemas")
-    
-    validations = [
-      {
-        name: "PURL Types Configuration",
-        data_file: "purl-types.json",
-        schema_file: File.join(schemas_dir, "purl-types.schema.json")
-      },
-      {
-        name: "Test Suite Data", 
-        data_file: "test-suite-data.json",
-        schema_file: File.join(schemas_dir, "test-suite-data.schema.json")
-      }
-    ]
-    
-    all_valid = true
-    
-    validations.each do |validation|
-      puts "\n📋 Validating #{validation[:name]}..."
-      
-      data_path = File.join(__dir__, validation[:data_file])
-      schema_path = validation[:schema_file]
-      
-      # Check if files exist
-      unless File.exist?(data_path)
-        puts "   ❌ Data file not found: #{validation[:data_file]}"
-        all_valid = false
-        next
-      end
-      
-      unless File.exist?(schema_path)
-        puts "   ❌ Schema file not found: #{validation[:schema_file]}"
-        all_valid = false
-        next
-      end
-      
-      begin
-        # Load and parse files
-        data = JSON.parse(File.read(data_path))
-        schema = JSON.parse(File.read(schema_path))
-        
-        # Validate
-        errors = JSON::Validator.fully_validate(schema, data)
-        
-        if errors.empty?
-          puts "   ✅ Valid - conforms to schema"
-        else
-          puts "   ❌ Invalid - found #{errors.length} error(s):"
-          errors.first(5).each { |error| puts "      • #{error}" }
-          if errors.length > 5
-            puts "      • ... and #{errors.length - 5} more errors"
-          end
-          all_valid = false
-        end
-        
-      rescue JSON::ParserError => e
-        puts "   ❌ JSON parsing error: #{e.message}"
-        all_valid = false
-      rescue => e
-        puts "   ❌ Validation error: #{e.message}"
-        all_valid = false
-      end
-    end
-    
-    puts "\n" + "=" * 50
-    if all_valid
-      puts "🎉 All JSON files are valid according to their schemas!"
-    else
-      puts "❌ One or more JSON files failed schema validation"
-      exit 1
     end
   end
 

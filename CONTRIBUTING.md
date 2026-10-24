@@ -61,9 +61,6 @@ rake test
 # Run PURL specification compliance tests
 rake spec:compliance
 
-# Validate JSON schemas
-rake spec:validate_schemas
-
 # Validate PURL examples
 rake spec:validate_examples
 
@@ -105,9 +102,8 @@ All contributions must include appropriate tests:
 │       ├── package_url.rb   # Core PURL parsing
 │       └── registry_url.rb  # Registry URL handling
 ├── test/                    # Test files
-├── schemas/                 # JSON schemas
-├── purl-types.json         # Package types configuration
-└── test-suite-data.json    # Official test cases
+├── purl-spec/               # Official specification submodule (schemas and test cases)
+└── purl-types.json         # Package types configuration
 ```
 
 ## Adding New Package Types
@@ -122,11 +118,10 @@ To add support for a new package type:
 
 ## JSON Schema Updates
 
-When modifying JSON files:
+When modifying `purl-types.json`:
 
-1. **Validate** against schemas: `rake spec:validate_schemas`
-2. **Update schemas** if structure changes
-3. **Test examples** are valid: `rake spec:validate_examples`
+1. **Run the tests**: `rake test` validates the type list against the schema in `purl-spec/schemas/`
+2. **Test examples** are valid: `rake spec:validate_examples`
 
 ## PURL Specification Compliance
 

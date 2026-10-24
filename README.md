@@ -759,24 +759,6 @@ Package types and registry patterns are stored in `purl-types.json` for easy con
 - **Cleaner JSON**: Reduced duplication and easier maintenance
 - **Cross-registry compatibility**: Same URL structure works with public and private registries
 
-## JSON Schema Validation
-
-The library includes JSON schemas for validation and documentation:
-
-- **`schemas/purl-types.schema.json`** - Schema for the PURL types configuration file
-- **`schemas/test-suite-data.schema.json`** - Schema for the official test suite data
-
-These schemas provide:
-- **Structure validation** - Ensure JSON files conform to expected format
-- **Documentation** - Self-documenting configuration with descriptions
-- **IDE support** - Enable autocomplete and validation in editors
-- **CI/CD integration** - Validate configuration in automated pipelines
-
-Validate JSON files against their schemas:
-```bash
-rake spec:validate_schemas
-```
-
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then:
@@ -788,7 +770,7 @@ rake test
 # Run specification compliance tests
 rake spec:compliance
 
-# Update test cases from official PURL spec
+# Update the purl-spec submodule
 rake spec:update
 
 # Show type information
@@ -819,12 +801,11 @@ The submodule is automatically updated weekly via Dependabot, ensuring tests sta
 
 ### Rake Tasks
 
-- `rake spec:update` - Fetch latest test cases from official PURL spec repository
+- `rake spec:update` - Update the purl-spec submodule to the latest upstream commit
+- `rake spec:stats` - Show statistics about the purl-spec test cases
 - `rake spec:compliance` - Run compliance tests against official test suite  
 - `rake spec:types` - Show information about all PURL types and their support
 - `rake spec:verify_types` - Verify our types list against official specification
-- `rake spec:validate_schemas` - Validate JSON files against their schemas
-- `rake spec:debug` - Show detailed info about failing test cases
 
 ## Funding
 
