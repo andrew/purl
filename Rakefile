@@ -25,7 +25,9 @@ namespace :spec do
     puts "=" * 30
     puts "rake spec:update      - Update the purl-spec submodule to the latest upstream commit"
     puts "rake spec:stats       - Show statistics about the purl-spec test cases"
+    puts "rake spec:sync_types  - Copy type rules from the purl-spec type definitions into purl-types.json"
     puts "rake spec:compliance  - Run all compliance tests against the official test suite"
+    puts "rake spec:debug       - List every failing purl-spec case, including known failures"
     puts "rake spec:types       - Show information about all PURL types and their support"
     puts "rake spec:verify_types - Verify our types list against the official specification"
     puts "rake spec:validate_examples - Validate all PURL examples in purl-types.json"
@@ -37,6 +39,48 @@ namespace :spec do
   desc "Update the purl-spec submodule to the latest upstream commit"
   task :update do
     sh "git submodule update --init --remote purl-spec"
+  end
+
+  desc "List every failing purl-spec case, including known failures"
+  task :debug do
+    ENV["PURL_SPEC_DEBUG"] = "1"
+    ruby "-Ilib", "-Itest", "test/test_purl_spec_compliance.rb", "-n", "test_official_spec_cases"
+  end
+
+  desc "Copy type rules from the purl-spec type definitions into purl-types.json"
+  task :sync_types do
+    require "json"
+
+    definitions = Dir[File.join(__dir__, "purl-spec", "types", "*-definition.json")].sort
+    abort "No purl-spec type definitions found; run `git submodule update --init`" if definitions.empty?
+
+    path = File.join(__dir__, "purl-types.json")
+    data = JSON.parse(File.read(path))
+    rule_keys = %w[namespace_requirement namespace_case_sensitive name_case_sensitive version_case_sensitive
+                   namespace_permitted_characters name_permitted_characters version_permitted_characters required_qualifiers]
+
+    definitions.each do |file|
+      definition = JSON.parse(File.read(file))
+      entry = data["types"][definition["type"]] ||= {
+        "description" => definition["type_name"],
+        "default_registry" => definition.dig("repository", "default_repository_url"),
+        "examples" => definition["examples"].to_a.first(3)
+      }
+      rule_keys.each { |key| entry.delete(key) }
+
+      entry["namespace_requirement"] = definition.dig("namespace_definition", "requirement")
+      %w[namespace name version].each do |component|
+        component_definition = definition["#{component}_definition"] || {}
+        entry["#{component}_case_sensitive"] = false if component_definition["case_sensitive"] == false
+        permitted = component_definition["permitted_characters"]
+        entry["#{component}_permitted_characters"] = permitted if permitted
+      end
+      required = (definition["qualifiers_definition"] || []).select { |q| q["requirement"] == "required" }.map { |q| q["key"] }
+      entry["required_qualifiers"] = required if required.any?
+    end
+
+    File.write(path, JSON.pretty_generate(data))
+    puts "Synced rules for #{definitions.length} types into purl-types.json"
   end
 
   desc "Show statistics about the purl-spec test cases"

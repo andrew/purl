@@ -71,6 +71,19 @@ class TestCLI < Minitest::Test
     assert_includes stdout, "Invalid PURL:"
   end
 
+  def test_validate_reports_type_rules
+    stdout, _stderr, status = run_cli("validate", "pkg:julia/Dates")
+    refute status.success?
+    assert_includes stdout, "uuid"
+  end
+
+  def test_parse_reports_type_rules_without_failing
+    stdout, _stderr, status = run_cli("parse", "pkg:julia/Dates")
+    assert status.success?
+    assert_includes stdout, "Breaks type rule: julia PURLs require the uuid qualifier"
+    refute_includes stdout, "Valid PURL"
+  end
+
   def test_generate_simple_purl
     stdout, _stderr, status = run_cli("generate", "--type", "gem", "--name", "rails")
     assert status.success?

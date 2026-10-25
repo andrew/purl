@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-24
+
+### Changed
+- A literal `+` is now a plus when parsing, not a space, so versions like `v2.0.0+incompatible` and `1.0.0+build.1` and qualifiers like `git+ssh://...` survive a parse and serialize round trip. `to_s` writes a space as `%20` and a plus as `%2B`. Strings from 1.x that used `+` for a space now read as a plus.
+- Type rules from the purl-spec type definitions are reported by `valid?`, `validation_errors` and `validate!` instead of raised by `parse` and `new`, so PURLs from real data that break them can still be parsed. This covers prohibited and required namespaces, permitted characters, required qualifiers such as julia's `uuid`, and cpan module names. maven, swift and composer PURLs without a namespace no longer raise. `purl validate` applies the rules, and `purl parse` lists any broken ones.
+- `to_s` writes qualifiers before the subpath (`?arch=x86_64#src/file.erl`). The older `#subpath?qualifiers` order is still accepted when parsing.
+- Qualifier values are still written unencoded as in 1.x, except `%`, `+`, `&`, `#` and spaces, which would not survive parsing.
+- git PURLs use the host as namespace and the repository path as name (`pkg:git/codeberg.org/forgejo/forgejo`).
+- Requires Ruby 3.3 or later.
+
+### Added
+- `rake spec:sync_types` copies type rules from the purl-spec type definitions into `purl-types.json`, and a test fails when they drift. Added brew, git, otp, vcpkg, vscode-extension, julia, chrome-extension, bazel, opam and yocto to `purl-types.json`.
+- The official purl-spec test suite runs in CI. A case passes when the gem produces an equivalent PURL, since output keeps the 1.x encoding. Three cases that contradict other spec cases or type definitions are listed as known failures.
+
+### Fixed
+- Qualifier values containing `?`, such as `repository_url=https://pkgs.alpinelinux.org/packages?branch=edge`, parse instead of being read as part of the name.
+- An unencoded npm scope without a version, such as `pkg:npm/@babel/core#lib`, parses instead of raising.
+
 ## [1.8.1] - 2026-04-13
 
 ### Security

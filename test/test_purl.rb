@@ -131,10 +131,8 @@ class TestPurl < Minitest::Test
   end
 
   def test_maven_requires_namespace
-    # Maven requires namespace per spec, so test that creation fails without it
-    assert_raises(Purl::ValidationError) do
-      Purl::PackageURL.new(type: "maven", name: "junit")
-    end
+    # Maven requires namespace per spec; the PURL is still built but reported invalid
+    refute Purl::PackageURL.new(type: "maven", name: "junit").valid?
     
     # Maven with namespace should work for registry URL generation
     purl = Purl::PackageURL.new(type: "maven", namespace: "junit", name: "junit")
@@ -533,7 +531,7 @@ class TestPurl < Minitest::Test
     assert_instance_of Array, known_types
     
     # Should have all official types plus additional ecosystem types
-    assert_equal 37, known_types.length
+    assert_equal 47, known_types.length
     
     # Should include common types
     assert_includes known_types, "gem"
@@ -701,6 +699,145 @@ class TestPurl < Minitest::Test
     result = purl.to_s
     assert_includes result, "@sha256:abc123"
     refute_includes result, "sha256%3A"
+  end
+
+  def test_parse_keeps_literal_plus
+    assert_equal "v2.0.0+incompatible", Purl.parse("pkg:golang/github.com/foo/bar@v2.0.0+incompatible").version
+    assert_equal "1.0.0+build.1", Purl.parse("pkg:cargo/foo@1.0.0+build.1").version
+    assert_equal "a+b", Purl.parse("pkg:generic/a+b").name
+    assert_equal "NSData+zlib", Purl.parse("pkg:cocoapods/GoogleUtilities@7.5.2#NSData+zlib").subpath
+    assert_equal({ "repository_url" => "git+ssh://example.com/a.git" }, Purl.parse("pkg:npm/foo?repository_url=git+ssh://example.com/a.git").qualifiers)
+  end
+
+  def test_plus_and_space_encoding
+    purl = Purl::PackageURL.new(type: "generic", namespace: "a b", name: "c+d", version: "1+2 3", qualifiers: { "q" => "x+y z" })
+    assert_equal "pkg:generic/a%20b/c%2Bd@1%2B2%203?q=x%2By%20z", purl.to_s
+    assert_equal "pkg:generic/c@1#e%2Bf%20g", Purl::PackageURL.new(type: "generic", name: "c", version: "1", subpath: "e+f g").to_s
+  end
+
+  def test_qualifier_roundtrip_preserves_values
+    input = "pkg:npm/%40pinata/sdk?repository_url=git%2Bssh%3A%2F%2Fgit%40github.com%2FPinataCloud%2Fpinata-sdk.git"
+    first = Purl.parse(input)
+    second = Purl.parse(first.to_s)
+    assert_equal "git+ssh://git@github.com/PinataCloud/pinata-sdk.git", second.qualifiers["repository_url"]
+    assert_equal first.to_s, second.to_s
+  end
+
+  def test_qualifiers_come_before_subpath
+    purl = Purl::PackageURL.new(type: "otp", name: "asn1", version: "5.4.1", qualifiers: { "arch" => "amd64" }, subpath: "src/asn1ct.erl")
+    assert_equal "pkg:otp/asn1@5.4.1?arch=amd64#src/asn1ct.erl", purl.to_s
+    assert_equal purl, Purl.parse(purl.to_s)
+  end
+
+  def test_parse_accepts_subpath_before_qualifiers
+    purl = Purl.parse("pkg:otp/asn1@5.4.1#src/asn1ct.erl?arch=amd64")
+    assert_equal({ "arch" => "amd64" }, purl.qualifiers)
+    assert_equal "src/asn1ct.erl", purl.subpath
+  end
+
+  def test_parse_unencoded_qualifier_value_containing_question_mark
+    purl = Purl.parse("pkg:apk/alpine/xfwm4?arch=x86_64&repository_url=https://pkgs.alpinelinux.org/packages?branch=edge")
+    assert_equal "xfwm4", purl.name
+    assert_equal "https://pkgs.alpinelinux.org/packages?branch=edge", purl.qualifiers["repository_url"]
+    assert_equal purl, Purl.parse(purl.to_s)
+  end
+
+  def test_parse_unencoded_npm_scope_without_version
+    purl = Purl.parse("pkg:npm/@babel/core#/googleapis/api/annotations/")
+    assert_equal "@babel", purl.namespace
+    assert_equal "core", purl.name
+    assert_nil purl.version
+    assert_equal "googleapis/api/annotations", purl.subpath
+  end
+
+  def test_parse_version_with_unencoded_slash
+    purl = Purl.parse("pkg:githubactions/actions/checkout@releases/v1")
+    assert_equal "checkout", purl.name
+    assert_equal "releases/v1", purl.version
+  end
+
+  def test_parse_rejects_missing_name_before_version
+    assert_raises(Purl::MalformedUrlError) { Purl.parse("pkg:cran/@0.9.1") }
+  end
+
+  def test_type_rule_breaks_parse_and_are_reported
+    purl = Purl.parse("pkg:cocoapods/KSCrash/Reporting/Filters@1.17.6")
+    assert_equal "KSCrash/Reporting", purl.namespace
+    assert_equal "pkg:cocoapods/KSCrash/Reporting/Filters@1.17.6", purl.to_s
+    refute purl.valid?
+    assert_kind_of Purl::InvalidNamespaceError, purl.validation_errors.first
+    assert_raises(Purl::InvalidNamespaceError) { purl.validate! }
+  end
+
+  def test_type_definition_namespace_rules
+    refute Purl.parse("pkg:vcpkg/boost/asio@1.84.0").valid?
+    refute Purl.parse("pkg:vscode-extension/java@1.46.2025091308").valid?
+    refute Purl.parse("pkg:golang/stdlib@go1.21").valid?
+    assert Purl.parse("pkg:vscode-extension/redhat/java").valid?
+  end
+
+  def test_case_is_kept_outside_the_1x_normalized_types
+    purl = Purl.parse("pkg:brew/Homebrew/Core/SQLite@3.43.2")
+    assert_equal "Homebrew/Core", purl.namespace
+    assert_equal "SQLite", purl.name
+    assert_equal "django-rest", Purl.parse("pkg:pypi/Django_Rest@1.0RC1").name
+    assert_equal "1.0RC1", Purl.parse("pkg:pypi/Django_Rest@1.0RC1").version
+  end
+
+  def test_type_definition_permitted_characters
+    refute Purl.parse("pkg:chrome-extension/dogs").valid?
+    refute Purl.parse("pkg:chrome-extension/dlpngalgnefjeiefhmpklpfiohadpglk@1.2.3-beta").valid?
+    assert Purl.parse("pkg:chrome-extension/DLPNGALGNEFJEIEFHMPKLPFIOHADPGLK@1.2.3.4").valid?
+    refute Purl.parse("pkg:chrome-extension/dlpngalgnefjeiefhmpklpfiohadpglk@1.2.3%0Afoo").valid?
+  end
+
+  def test_type_definition_required_qualifiers
+    purl = Purl.parse("pkg:julia/Dates")
+    assert_equal "Dates", purl.name
+    assert_kind_of Purl::InvalidQualifierError, purl.validation_errors.first
+    assert Purl.parse("pkg:julia/Dates?uuid=ade2ca70-3891-5945-98fb-dc099432e06a").valid?
+  end
+
+  def test_cpan_module_names_are_reported
+    refute Purl.parse("pkg:cpan/URI::PackageURL").valid?
+    assert Purl.parse("pkg:cpan/GDT/URI-PackageURL").valid?
+  end
+
+  def test_git_name_is_repository_path
+    purl = Purl.parse("pkg:git/codeberg.org/forgejo/forgejo@a72d2c07#options/locale_readme.md")
+    assert_equal "codeberg.org", purl.namespace
+    assert_equal "forgejo/forgejo", purl.name
+    assert_equal "pkg:git/codeberg.org/forgejo/forgejo@a72d2c07#options/locale_readme.md", purl.to_s
+  end
+
+  def test_git_name_without_namespace_keeps_encoded_slashes
+    purl = Purl.parse("pkg:git/libs%2FqPCP?repository_url=https:%2F%2Fgithub.com%2Ffarmakis%2FqPCP.git")
+    assert_nil purl.namespace
+    assert_equal "libs/qPCP", purl.name
+    assert_equal "pkg:git/libs%2FqPCP?repository_url=https://github.com/farmakis/qPCP.git", purl.to_s
+
+    roundtrip = Purl.parse(purl.to_s)
+    assert_nil roundtrip.namespace
+    assert_equal "libs/qPCP", roundtrip.name
+  end
+
+  def test_git_host_namespace_roundtrips
+    purl = Purl.parse("pkg:git/github.com/farmakis/qPCP")
+    assert_equal "pkg:git/github.com/farmakis/qPCP", purl.to_s
+    assert_equal purl, Purl.parse(purl.to_s)
+  end
+
+  def test_output_matches_1x_encoding
+    assert_equal "pkg:bazel/rules_java@7.8.0?repository_url=https://bcr.bazel.build/", Purl.parse("pkg:bazel/rules_java@7.8.0?repository_url=https:%2F%2Fbcr.bazel.build%2F").to_s
+    assert_equal "pkg:alpm/arch/containers-common@1%3A0.47.4-4?arch=x86_64", Purl.parse("pkg:alpm/arch/containers-common@1:0.47.4-4?arch=x86_64").to_s
+    assert_equal "pkg:generic/openssl@1.1.10g?checksum=sha1:ad95,sha256:41bf", Purl::PackageURL.new(type: "generic", name: "openssl", version: "1.1.10g", qualifiers: { "checksum" => "sha1:ad95,sha256:41bf" }).to_s
+    assert_equal "pkg:maven/net.example/lib?repository_url=https://repo.example.com/maven2", Purl.parse("pkg:maven/net.example/lib?repository_url=https://repo.example.com/maven2").to_s
+  end
+
+  def test_qualifier_values_escape_only_what_breaks_parsing
+    purl = Purl::PackageURL.new(type: "generic", name: "x", qualifiers: { "q" => "a b&c#d+e%f" })
+    assert_equal "pkg:generic/x?q=a%20b%26c%23d%2Be%25f", purl.to_s
+    assert_equal "a b&c#d+e%f", Purl.parse(purl.to_s).qualifiers["q"]
   end
 
   def test_ecosystems_url_namespaced_types

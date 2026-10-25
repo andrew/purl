@@ -4,7 +4,7 @@ A Ruby library for parsing, validating, and generating Package URLs (PURLs) as d
 
 This library features comprehensive error handling with namespaced error types, bidirectional registry URL conversion, and JSON-based configuration for cross-language compatibility.
 
-[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.1-red.svg)](https://www.ruby-lang.org/)
+[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.3-red.svg)](https://www.ruby-lang.org/)
 [![Gem Version](https://badge.fury.io/rb/purl.svg)](https://rubygems.org/gems/purl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -17,7 +17,7 @@ This library features comprehensive error handling with namespaced error types, 
 ## Features
 
 - **Command-line interface** with parse, validate, convert, download, generate, info, lookup, and advisories commands plus JSON output
-- **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
+- **Comprehensive PURL parsing and validation** with 47 package types (42 official + 5 additional ecosystems)
 - **Better error handling** with namespaced error classes and contextual information
 - **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
 - **Download URL generation** for 18 package ecosystems (gem, npm, cargo, maven, etc.)
@@ -26,7 +26,7 @@ This library features comprehensive error handling with namespaced error types, 
 - **Type-specific validation** for conan, cran, and swift packages
 - **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
 - **Rails-style route patterns** for registry URL templates
-- **100% compliance** with official PURL specification test suite (59/59 tests passing)
+- **Tested against** the official PURL specification test suite
 - **Cross-language compatibility** with JSON-based configuration
 - **Comprehensive documentation** and examples
 
@@ -657,17 +657,17 @@ rescue Purl::ParseError => e
   puts "Value: #{e.value}"
 end
 
-# Type-specific validation errors
-begin
-  Purl::PackageURL.new(type: "swift", name: "Alamofire")  # Swift requires namespace
-rescue Purl::ValidationError => e
-  puts e.message  # => "Swift PURLs require a namespace to be unambiguous"
-end
+# Type rules from the purl-spec type definitions are reported, not raised,
+# so PURLs found in real data that break them can still be parsed
+purl = Purl.parse("pkg:julia/Dates")
+purl.valid?                             # => false
+purl.validation_errors.map(&:message)   # => ["julia PURLs require the uuid qualifier"]
+purl.validate!                          # raises Purl::InvalidQualifierError
 ```
 
 ### Supported Package Types
 
-The library supports 37 package types (32 official + 5 additional ecosystems):
+The library supports 47 package types (42 official + 5 additional ecosystems):
 
 **Registry URL Generation (20 types):**
 - `bioconductor` (R/Bioconductor) - bioconductor.org
@@ -803,7 +803,9 @@ The submodule is automatically updated weekly via Dependabot, ensuring tests sta
 
 - `rake spec:update` - Update the purl-spec submodule to the latest upstream commit
 - `rake spec:stats` - Show statistics about the purl-spec test cases
+- `rake spec:sync_types` - Copy type rules from the purl-spec type definitions into `purl-types.json`
 - `rake spec:compliance` - Run compliance tests against official test suite  
+- `rake spec:debug` - List every failing purl-spec case, including known failures
 - `rake spec:types` - Show information about all PURL types and their support
 - `rake spec:verify_types` - Verify our types list against official specification
 
