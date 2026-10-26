@@ -742,6 +742,17 @@ class TestPurl < Minitest::Test
     assert_equal purl, Purl.parse(purl.to_s)
   end
 
+  def test_parse_malformed_percent_encoding_raises_parse_error
+    assert_raises(Purl::ParseError) { Purl.parse("pkg:npm/foo@1%zz") }
+    assert_raises(Purl::ParseError) { Purl.parse("pkg:npm/foo?arch=%zz") }
+  end
+
+  def test_parse_drops_qualifiers_without_value
+    purl = Purl.parse("pkg:golang/x/y?arch=&os&distro=fedora")
+    assert_equal({ "distro" => "fedora" }, purl.qualifiers)
+    assert_equal "pkg:golang/x/y?distro=fedora", purl.to_s
+  end
+
   def test_parse_unencoded_npm_scope_without_version
     purl = Purl.parse("pkg:npm/@babel/core#/googleapis/api/annotations/")
     assert_equal "@babel", purl.namespace

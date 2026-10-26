@@ -50,7 +50,11 @@ module Purl
 
     # Percent-decoding, not form decoding, so a literal '+' is not turned into a space
     def self.fast_decode(str)
-      str.include?("%") ? URI.decode_uri_component(str) : str
+      return str unless str.include?("%")
+
+      URI.decode_uri_component(str)
+    rescue ArgumentError
+      raise ParseError, "Invalid percent-encoding: #{str}"
     end
 
     # Components are written as 1.x wrote them, except a space is %20 because a literal '+' now stays a plus
@@ -63,6 +67,16 @@ module Purl
     # Qualifier values are written as is, as 1.x did, apart from the characters that would not survive parsing
     def self.encode_qualifier_value(str)
       str.to_s.gsub(/[%+&# ]/, QUALIFIER_VALUE_ESCAPES)
+    end
+
+    def self.type_rules(type)
+      Purl.load_types_config["types"][type] || {}
+    end
+
+    def self.permitted_regex(pattern)
+      @permitted_regexes ||= {}
+      # Spec patterns use ^ and $, which in Ruby also match at line breaks
+      @permitted_regexes[pattern] ||= Regexp.new(pattern.sub(/\A\^/) { "\\A" }.sub(/\$\z/) { "\\z" })
     end
 
     VALID_TYPE_CHARS = /\A[a-zA-Z0-9\.\+\-]+\z/.freeze
@@ -132,8 +146,8 @@ module Purl
       subpath = nil
       query_string = nil
 
-      # Split at the first '?' and '#' rather than the last: qualifier values written by versions
-      # before 2.0 were not encoded and can contain both, while path and version never do.
+      # Split at the first '?' and '#': qualifier values written before 2.0 were not encoded and can
+      # contain '?'. A '#' after the qualifiers always starts the subpath, as the spec requires.
       question_index = remainder.index("?")
       hash_index = remainder.index("#")
       subpath_part = nil
@@ -537,10 +551,6 @@ module Purl
       self.class.type_rules(@type)
     end
 
-    def self.type_rules(type)
-      Purl.load_types_config["types"][type] || {}
-    end
-
     def type_rule_errors
       rules = type_rules
       errors = []
@@ -573,12 +583,6 @@ module Purl
 
     def rule_error(error_class, component, value, message)
       error_class.new(message, component: component, value: value, rule: "#{@type} type definition")
-    end
-
-    def self.permitted_regex(pattern)
-      @permitted_regexes ||= {}
-      # Spec patterns use ^ and $, which in Ruby also match at line breaks
-      @permitted_regexes[pattern] ||= Regexp.new(pattern.sub(/\A\^/) { "\\A" }.sub(/\$\z/) { "\\z" })
     end
 
     def validate_qualifiers(qualifiers)
@@ -661,6 +665,7 @@ module Purl
         next if pair.empty?
         key, value = pair.split("=", 2)
         value = fast_decode(value.to_s)
+        next if value.empty?
         # Normalize qualifier keys to lowercase
         normalized_key = key.downcase
         

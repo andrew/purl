@@ -125,7 +125,7 @@ When modifying `purl-types.json`:
 
 ## PURL Specification Compliance
 
-This library is tested against the official PURL specification test suite in the `purl-spec` submodule. Cases that need type-specific rules not implemented yet are listed in `KNOWN_FAILURES` in `test/test_purl_spec_compliance.rb`:
+This library is tested against the official PURL specification test suite in the `purl-spec` submodule. Cases that contradict other spec cases or the type definitions are listed in `KNOWN_FAILURES` in `test/test_purl_spec_compliance.rb`:
 
 - All changes must maintain compliance
 - Run `rake spec:compliance` before submitting

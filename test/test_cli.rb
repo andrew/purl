@@ -71,6 +71,12 @@ class TestCLI < Minitest::Test
     assert_includes stdout, "Invalid PURL:"
   end
 
+  def test_validate_malformed_percent_encoding
+    stdout, _stderr, status = run_cli("validate", "pkg:npm/foo@1%zz")
+    refute status.success?
+    assert_includes stdout, "Invalid PURL: Invalid percent-encoding"
+  end
+
   def test_validate_reports_type_rules
     stdout, _stderr, status = run_cli("validate", "pkg:julia/Dates")
     refute status.success?
