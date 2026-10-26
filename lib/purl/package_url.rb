@@ -48,9 +48,35 @@ module Purl
     # @return [String, nil] subpath within the package
     attr_reader :subpath
 
-    # Fast-path decode: skip URI.decode_www_form_component when no encoding present
+    # Percent-decoding, not form decoding, so a literal '+' is not turned into a space
     def self.fast_decode(str)
-      str.include?("%") || str.include?("+") ? URI.decode_www_form_component(str) : str
+      return str unless str.include?("%")
+
+      URI.decode_uri_component(str)
+    rescue ArgumentError
+      raise ParseError, "Invalid percent-encoding: #{str}"
+    end
+
+    # Components are written as 1.x wrote them, except a space is %20 because a literal '+' now stays a plus
+    def self.encode_component(str)
+      URI.encode_www_form_component(str.to_s).gsub("+", "%20")
+    end
+
+    QUALIFIER_VALUE_ESCAPES = { "%" => "%25", "+" => "%2B", "&" => "%26", "#" => "%23", " " => "%20" }.freeze
+
+    # Qualifier values are written as is, as 1.x did, apart from the characters that would not survive parsing
+    def self.encode_qualifier_value(str)
+      str.to_s.gsub(/[%+&# ]/, QUALIFIER_VALUE_ESCAPES)
+    end
+
+    def self.type_rules(type)
+      Purl.load_types_config["types"][type] || {}
+    end
+
+    def self.permitted_regex(pattern)
+      @permitted_regexes ||= {}
+      # Spec patterns use ^ and $, which in Ruby also match at line breaks
+      @permitted_regexes[pattern] ||= Regexp.new(pattern.sub(/\A\^/) { "\\A" }.sub(/\$\z/) { "\\z" })
     end
 
     VALID_TYPE_CHARS = /\A[a-zA-Z0-9\.\+\-]+\z/.freeze
@@ -84,7 +110,7 @@ module Purl
       @version = validate_version(version) if version
       @qualifiers = validate_qualifiers(qualifiers) if qualifiers
       @subpath = validate_subpath(subpath) if subpath
-      
+
       # Apply post-validation normalization that depends on other components
       apply_post_validation_normalization
     end
@@ -115,24 +141,28 @@ module Purl
       remainder = purl_string[4..-1]
       remainder = remainder.sub(/\A\/+/, "") if remainder.start_with?("/")
       
-      # Split off qualifiers (query string) first
-      if remainder.include?("?")
-        path_and_version, query_string = remainder.split("?", 2)
-      else
-        path_and_version = remainder
-        query_string = nil
-      end
-      
-      # Parse version and subpath according to PURL spec
-      # Format: pkg:type/namespace/name@version#subpath
+      # Format: pkg:type/namespace/name@version?qualifiers#subpath
       version = nil
       subpath = nil
-      
-      # First split on # to separate subpath
-      if path_and_version.include?("#")
-        path_and_version_part, subpath_part = path_and_version.split("#", 2)
+      query_string = nil
+
+      # Split at the first '?' and '#': qualifier values written before 2.0 were not encoded and can
+      # contain '?'. A '#' after the qualifiers always starts the subpath, as the spec requires.
+      question_index = remainder.index("?")
+      hash_index = remainder.index("#")
+      subpath_part = nil
+      if hash_index && (question_index.nil? || hash_index < question_index)
+        # Versions before 2.0 wrote #subpath?qualifiers
+        subpath_part, query_string = remainder[(hash_index + 1)..].split("?", 2)
+        remainder = remainder[0...hash_index]
+      elsif question_index
+        query_string, subpath_part = remainder[(question_index + 1)..].split("#", 2)
+        remainder = remainder[0...question_index]
+      end
+
+      if subpath_part
         # Clean up subpath - remove leading/trailing slashes and decode components
-        if subpath_part && !subpath_part.empty?
+        unless subpath_part.empty?
           subpath_clean = subpath_part.strip
           subpath_clean = subpath_clean[1..-1] if subpath_clean.start_with?("/")
           subpath_clean = subpath_clean[0..-2] if subpath_clean.end_with?("/")
@@ -143,14 +173,16 @@ module Purl
             subpath = subpath_components.join("/")
           end
         end
-      else
-        path_and_version_part = path_and_version
       end
-      
-      # Then split on @ to separate version
-      if path_and_version_part.include?("@")
-        # Find the last @ to handle cases like @babel/core@7.0.0
-        at_index = path_and_version_part.rindex("@")
+
+      path_and_version_part = remainder
+
+      # An '@' that starts a segment with more path after it is an unencoded npm scope like @babel/core
+      at_index = path_and_version_part.rindex("@")
+      if at_index && path_and_version_part[at_index - 1] == "/" && path_and_version_part.index("/", at_index)
+        at_index = nil
+      end
+      if at_index
         path_part = path_and_version_part[0...at_index]
         version_part = path_and_version_part[at_index + 1..-1]
         version = fast_decode(version_part) unless version_part.empty?
@@ -190,7 +222,11 @@ module Purl
         # Normal parsing logic
         # For simple cases like gem/rails, there's just the name
         # For namespaced cases like npm/@babel/core, @babel is namespace, core is name
-        if path_components.length == 1
+        if type.downcase == "git" && path_components.length > 1
+          # The namespace is the git host and the name is the repository path on it
+          namespace = fast_decode(path_components.shift)
+          name = path_components.map { |part| fast_decode(part) }.join("/")
+        elsif path_components.length == 1
           # Simple case: just type/name
           name = fast_decode(path_components[0])
           namespace = nil
@@ -236,45 +272,36 @@ module Purl
       if namespace
         # Encode namespace parts, but preserve the structure
         namespace_parts = namespace.split("/").map do |part|
-          URI.encode_www_form_component(part)
+          self.class.encode_component(part)
         end
         parts << "/" << namespace_parts.join("/")
       end
-      
-      parts << "/" << URI.encode_www_form_component(name)
-      
+
+      # Legacy git PURLs without a host namespace keep slashes in the name encoded so they reparse the same
+      name_parts = type == "git" && namespace ? name.split("/") : [name]
+      parts << "/" << name_parts.map { |part| self.class.encode_component(part) }.join("/")
+
       if version
-        encoded_version = case type&.downcase
-        when "docker"
-          # Docker versions with sha256: should not encode the colon
-          version
-        else
-          URI.encode_www_form_component(version)
-        end
-        parts << "@" << encoded_version
+        # Docker versions such as sha256:abc are written unencoded
+        parts << "@" << (type == "docker" ? version : self.class.encode_component(version))
       end
-      
-      if subpath
-        # Subpath goes after # according to PURL spec
-        # Normalize the subpath to remove . and .. components
-        normalized_subpath = self.class.normalize_subpath(subpath)
-        if normalized_subpath
-          subpath_parts = normalized_subpath.split("/").map { |part| URI.encode_www_form_component(part) }
-          parts << "#" << subpath_parts.join("/")
-        end
-      end
-      
+
       if qualifiers && !qualifiers.empty?
         query_parts = qualifiers.sort.map do |key, value|
-          # Keys are already normalized to lowercase during parsing/validation
-          # Values should not be encoded for certain safe characters in PURL spec
-          encoded_key = key  # Key is already clean
-          encoded_value = value.to_s  # Don't encode values to match canonical form
-          "#{encoded_key}=#{encoded_value}"
+          "#{key}=#{self.class.encode_qualifier_value(value)}"
         end
         parts << "?" << query_parts.join("&")
       end
-      
+
+      if subpath
+        # Normalize the subpath to remove . and .. components
+        normalized_subpath = self.class.normalize_subpath(subpath)
+        if normalized_subpath
+          subpath_parts = normalized_subpath.split("/").map { |part| self.class.encode_component(part) }
+          parts << "#" << subpath_parts.join("/")
+        end
+      end
+
       @canonical = parts.join.freeze
     end
 
@@ -414,6 +441,26 @@ module Purl
       advisory_client.lookup(self)
     end
 
+    # Rules from the purl-spec type definitions that this PURL breaks. Real-world PURLs often
+    # break them, so they are reported here instead of raised by parse and new.
+    #
+    # @return [Array<ValidationError>]
+    def validation_errors
+      @validation_errors ||= type_rule_errors.freeze
+    end
+
+    # @return [Boolean] true when the PURL follows its type definition
+    def valid?
+      validation_errors.empty?
+    end
+
+    # @return [PackageURL] self
+    # @raise [ValidationError] the first broken type rule
+    def validate!
+      raise validation_errors.first unless valid?
+      self
+    end
+
     private
 
     def validate_and_normalize_type(type)
@@ -455,35 +502,21 @@ module Purl
       
       # Apply type-specific normalization (@type is already lowercased)
       case @type
-      when "bitbucket", "github"
+      when "bitbucket", "github", "composer"
         name_str.downcase
       when "pypi"
         name_str.downcase.gsub("_", "-")
-      when "mlflow"
-        name_str
-      when "composer"
-        name_str.downcase
       else
         name_str
       end
     end
 
     def validate_namespace(namespace)
-      # Check namespace requirements from spec
-      if namespace_required_for_type?(@type) && namespace.nil?
-        raise ValidationError.new(
-          "#{@type.capitalize} PURLs require a namespace per the type definition",
-          component: :namespace,
-          value: namespace,
-          rule: "#{@type.downcase} packages need namespace"
-        )
-      end
-      
       return nil if namespace.nil?
-      
+
       namespace_str = namespace.to_s.strip
       return nil if namespace_str.empty?
-      
+
       # Check that decoded namespace segments don't contain '/'
       namespace_str.split("/").each do |segment|
         decoded_segment = self.class.fast_decode(segment)
@@ -497,11 +530,8 @@ module Purl
         end
       end
       
-      # Apply type-specific normalization (@type is already lowercased)
       case @type
-      when "bitbucket", "github"
-        namespace_str.downcase
-      when "composer"
+      when "bitbucket", "github", "composer"
         namespace_str.downcase
       else
         namespace_str
@@ -510,17 +540,49 @@ module Purl
 
     def validate_version(version)
       return nil if version.nil?
-      
+
       version_str = version.to_s.strip
       return nil if version_str.empty?
-      
-      # Apply type-specific normalization (@type is already lowercased)
-      case @type
-      when "huggingface"
-        version_str.downcase
-      else
-        version_str
+
+      @type == "huggingface" ? version_str.downcase : version_str
+    end
+
+    def type_rules
+      self.class.type_rules(@type)
+    end
+
+    def type_rule_errors
+      rules = type_rules
+      errors = []
+
+      case rules["namespace_requirement"]
+      when "required"
+        errors << rule_error(InvalidNamespaceError, :namespace, nil, "#{@type} PURLs require a namespace") if namespace.nil?
+      when "prohibited"
+        errors << rule_error(InvalidNamespaceError, :namespace, namespace, "#{@type} PURLs do not have a namespace") if namespace
       end
+
+      { "namespace" => [namespace, InvalidNamespaceError], "name" => [name, InvalidNameError], "version" => [version, InvalidVersionError] }.each do |component, (value, error_class)|
+        pattern = rules["#{component}_permitted_characters"]
+        next unless pattern && value
+        checked = rules["#{component}_case_sensitive"] == false ? value.downcase : value
+        next if self.class.permitted_regex(pattern).match?(checked)
+
+        errors << rule_error(error_class, component.to_sym, value, "#{@type} #{component} does not match #{pattern}")
+      end
+
+      if @type == "cpan" && name.include?("::")
+        errors << rule_error(InvalidNameError, :name, name, "cpan names are distribution names like URI-PackageURL, not module names like URI::PackageURL")
+      end
+
+      missing = Array(rules["required_qualifiers"]) - (qualifiers || {}).keys
+      errors << rule_error(InvalidQualifierError, :qualifiers, qualifiers, "#{@type} PURLs require the #{missing.join(", ")} qualifier") if missing.any?
+
+      errors
+    end
+
+    def rule_error(error_class, component, value, message)
+      error_class.new(message, component: component, value: value, rule: "#{@type} type definition")
     end
 
     def validate_qualifiers(qualifiers)
@@ -591,11 +653,6 @@ module Purl
       end
     end
 
-    def namespace_required_for_type?(type)
-      return false unless type
-      self.class.namespace_required_types.include?(type.downcase)
-    end
-
     def self.purl_types_data
       Purl.load_types_config
     end
@@ -604,7 +661,11 @@ module Purl
       return {} if query_string.nil? || query_string.empty?
       
       qualifiers = {}
-      URI.decode_www_form(query_string).each do |key, value|
+      query_string.split("&").each do |pair|
+        next if pair.empty?
+        key, value = pair.split("=", 2)
+        value = fast_decode(value.to_s)
+        next if value.empty?
         # Normalize qualifier keys to lowercase
         normalized_key = key.downcase
         

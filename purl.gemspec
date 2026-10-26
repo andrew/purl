@@ -10,9 +10,9 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Parse and convert package urls (purls)"
   spec.description = "This library features comprehensive error handling with namespaced error types, bidirectional registry URL conversion, and JSON-based configuration for cross-language compatibility.
-It supports 37 package types (32 official + 5 additional ecosystems) and is fully compliant with the official PURL specification test suite."
+It supports 47 package types (42 official + 5 additional ecosystems) and is tested against the official PURL specification test suite."
   spec.homepage = "https://github.com/andrew/purl"
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = ">= 3.3.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage

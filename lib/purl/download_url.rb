@@ -163,7 +163,7 @@ module Purl
         pattern = DOWNLOAD_PATTERNS[k]
         next false if pattern[:note]
 
-        namespace = if NAMESPACE_REQUIRED_TYPES.include?(k)
+        namespace = if NAMESPACE_REQUIRED_TYPES.include?(k) || Purl::PackageURL.namespace_required_types.include?(k)
           k == "swift" ? "github.com/test" : "test"
         end
         begin

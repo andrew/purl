@@ -4,99 +4,112 @@ require_relative "test_helper"
 require "json"
 
 class TestPurlSpecCompliance < Minitest::Test
-  def setup
-    # No external test data currently - individual test methods use hardcoded cases
-    @test_data = []
+  SPEC_TESTS_DIR = File.join(File.dirname(__dir__), "purl-spec", "tests")
+
+  # Cases that contradict other spec cases or type definitions, keyed by [file, test_type, input]
+  KNOWN_FAILURES = [
+    # Expected to fail on uppercase qualifier keys, but the validate case for the same input
+    # and the maven cases expect the keys to be lowercased
+    ["gem-test.json", "parse", "pkg:gem/jruby-launcher@1.1.2?Platform=java"],
+    ["rpm-test.json", "parse", "pkg:Rpm/fedora/curl@7.50.3-1.fc25?Arch=i386&Distro=fedora-25"],
+    # A recommended case that lowercases, while git-definition.json marks namespace and name case sensitive
+    ["git-test.json", "validate", "pkg:git/github/Package-url/purl-Spec@244fd47e07d1004f0aed9c"]
+  ].freeze
+
+
+  TYPE_RULE_KEYS = %w[namespace_requirement namespace_case_sensitive name_case_sensitive version_case_sensitive
+                      namespace_permitted_characters name_permitted_characters version_permitted_characters
+                      required_qualifiers].freeze
+
+  def spec_cases
+    files = Dir[File.join(SPEC_TESTS_DIR, "**", "*.json")].sort
+    flunk "No purl-spec test files found; run `git submodule update --init`" if files.empty?
+
+    files.flat_map do |file|
+      JSON.parse(File.read(file)).fetch("tests").map { |test_case| [File.basename(file), test_case] }
+    end
   end
 
-  def test_all_spec_compliance_cases
-    passed = 0
-    failed = 0
-    errors = []
+  def components(purl)
+    qualifiers = purl.qualifiers.nil? || purl.qualifiers.empty? ? nil : purl.qualifiers
+    { "type" => purl.type, "namespace" => purl.namespace, "name" => purl.name, "version" => purl.version,
+      "qualifiers" => qualifiers, "subpath" => purl.subpath }
+  end
 
-    @test_data.each_with_index do |test_case, index|
-      description = test_case["description"]
-      purl_string = test_case["purl"]
-      expected_canonical = test_case["canonical_purl"]
-      expected_type = test_case["type"]
-      expected_namespace = test_case["namespace"]
-      expected_name = test_case["name"]
-      expected_version = test_case["version"]
-      expected_qualifiers = test_case["qualifiers"]
-      expected_subpath = test_case["subpath"]
-      is_invalid = test_case["is_invalid"]
+  # Components the type definition marks case-insensitive are compared ignoring case, since the gem keeps
+  # the case it was given for types it did not normalize in 1.x
+  def comparable(parts)
+    rules = Purl::PackageURL.type_rules(parts["type"].to_s.downcase)
+    parts.to_h do |key, value|
+      [key, value.is_a?(String) && rules["#{key}_case_sensitive"] == false ? value.downcase : value]
+    end
+  end
 
-      begin
-        if is_invalid
-          # Should raise an error
-          assert_raises(Purl::Error, "Case #{index + 1}: #{description} - Expected parsing to fail but it succeeded") do
-            Purl::PackageURL.parse(purl_string)
-          end
-          passed += 1
-        else
-          # Should parse successfully
-          purl = Purl::PackageURL.parse(purl_string)
-          
-          # Check all components
-          assert_equal expected_type, purl.type, "Case #{index + 1}: #{description} - Type mismatch"
-          
-          if expected_namespace.nil?
-            assert_nil purl.namespace, "Case #{index + 1}: #{description} - Namespace mismatch"
-          else
-            assert_equal expected_namespace, purl.namespace, "Case #{index + 1}: #{description} - Namespace mismatch"
-          end
-          
-          assert_equal expected_name, purl.name, "Case #{index + 1}: #{description} - Name mismatch"
-          
-          if expected_version.nil?
-            assert_nil purl.version, "Case #{index + 1}: #{description} - Version mismatch"
-          else
-            assert_equal expected_version, purl.version, "Case #{index + 1}: #{description} - Version mismatch"
-          end
-          
-          if expected_qualifiers.nil?
-            assert_nil purl.qualifiers, "Case #{index + 1}: #{description} - Qualifiers mismatch"
-          else
-            assert_equal expected_qualifiers, purl.qualifiers, "Case #{index + 1}: #{description} - Qualifiers mismatch"
-          end
-          
-          if expected_subpath.nil?
-            assert_nil purl.subpath, "Case #{index + 1}: #{description} - Subpath mismatch"
-          else
-            assert_equal expected_subpath, purl.subpath, "Case #{index + 1}: #{description} - Subpath mismatch"
-          end
-          
-          # Check canonical form if specified
-          if expected_canonical && expected_canonical != purl_string
-            assert_equal expected_canonical, purl.to_s, "Case #{index + 1}: #{description} - Canonical form mismatch"
-          end
-          
-          passed += 1
-        end
-      rescue => e
-        failed += 1
-        error_msg = "Case #{index + 1}: #{description}\n  Input: #{purl_string}\n  Error: #{e.class}: #{e.message}"
-        errors << error_msg
-        puts error_msg if ENV["VERBOSE"]
+  def build(input)
+    Purl::PackageURL.new(type: input["type"], namespace: input["namespace"], name: input["name"],
+                         version: input["version"], qualifiers: input["qualifiers"], subpath: input["subpath"])
+  end
+
+  # The gem parses real-world PURLs that break type rules and reports them through valid?, and writes
+  # the 1.x encoding, so a case passes when it is equivalent to the spec's expectation
+  def passes?(test_case)
+    input = test_case["input"]
+    purl = test_case["test_type"] == "build" ? build(input) : Purl::PackageURL.parse(input)
+    return !purl.valid? if test_case["expected_failure"]
+    return false unless Purl::PackageURL.parse(purl.to_s) == purl
+
+    expected = test_case["expected_output"]
+    if test_case["test_type"] == "parse"
+      comparable(components(purl)) == comparable(expected)
+    else
+      purl.to_s == expected || comparable(components(purl)) == comparable(components(Purl::PackageURL.parse(expected)))
+    end
+  rescue Purl::Error
+    test_case["expected_failure"]
+  end
+
+  def test_official_spec_cases
+    unexpected = []
+    now_passing = []
+
+    spec_cases.each do |file, test_case|
+      input = test_case["input"].is_a?(String) ? test_case["input"] : JSON.generate(test_case["input"])
+      known = KNOWN_FAILURES.include?([file, test_case["test_type"], input])
+      if passes?(test_case)
+        now_passing << [file, test_case["test_type"], input] if known
+      else
+        failure = "#{file} #{test_case["test_type"]}: #{test_case["description"]}\n  input: #{input}"
+        puts "#{known ? "[known] " : ""}#{failure}" if ENV["PURL_SPEC_DEBUG"]
+        unexpected << failure unless known
       end
     end
 
-    if failed > 0 && ENV["VERBOSE"]
-      puts "\n=== Failed Cases ==="
-      errors.each { |error| puts error }
-    end
-
-    # We have achieved high compliance with the PURL specification
-    # Most failures are on advanced validation rules for specific package types
-    if @test_data.empty?
-      skip "No test data available in test-suite-data.json"
-    end
-    
-    success_rate = passed.to_f / @test_data.length
-    assert_operator success_rate, :>=, 0.8, "Less than 80% of spec tests are passing (got #{(success_rate * 100).round(1)}%)"
+    assert_empty unexpected, "purl-spec cases failing:\n#{unexpected.join("\n")}"
+    assert_empty now_passing, "Remove these from KNOWN_FAILURES, they pass now:\n#{now_passing.map(&:inspect).join("\n")}"
   end
 
-  # Individual test methods for key cases that must work
+  def test_purl_types_json_matches_type_definitions
+    project_root = File.dirname(__dir__)
+    types = JSON.parse(File.read(File.join(project_root, "purl-types.json")))["types"]
+    definitions = Dir[File.join(project_root, "purl-spec", "types", "*-definition.json")]
+    refute_empty definitions
+
+    definitions.each do |file|
+      definition = JSON.parse(File.read(file))
+      expected = { "namespace_requirement" => definition.dig("namespace_definition", "requirement") }
+      %w[namespace name version].each do |component|
+        component_definition = definition["#{component}_definition"] || {}
+        expected["#{component}_case_sensitive"] = false if component_definition["case_sensitive"] == false
+        expected["#{component}_permitted_characters"] = component_definition["permitted_characters"]
+      end
+      required = (definition["qualifiers_definition"] || []).select { |q| q["requirement"] == "required" }.map { |q| q["key"] }
+      expected["required_qualifiers"] = required if required.any?
+
+      actual = (types[definition["type"]] || {}).slice(*TYPE_RULE_KEYS)
+      assert_equal expected.compact, actual, "#{definition["type"]} rules differ from purl-spec; run `rake spec:sync_types`"
+    end
+  end
+
   def test_basic_maven_case
     purl = Purl::PackageURL.parse("pkg:maven/org.apache.commons/io@1.3.4")
     assert_equal "maven", purl.type
@@ -113,41 +126,18 @@ class TestPurlSpecCompliance < Minitest::Test
     assert_equal "googleapis/api/annotations", purl.subpath
   end
 
-  def test_npm_scoped_package
-    test_cases = @test_data.select { |tc| tc["type"] == "npm" && tc["namespace"] }
-    skip "No npm scoped test cases found" if test_cases.empty?
-    
-    test_case = test_cases.first
-    purl = Purl::PackageURL.parse(test_case["purl"])
-    assert_equal "npm", purl.type
-    assert_equal test_case["namespace"], purl.namespace
-    assert_equal test_case["name"], purl.name
-  end
-
-  def test_type_case_normalization
-    # Type should be normalized to lowercase
-    golang_cases = @test_data.select { |tc| tc["purl"]&.include?("GOLANG") }
-    skip "No GOLANG test cases found" if golang_cases.empty?
-    
-    test_case = golang_cases.first
-    purl = Purl::PackageURL.parse(test_case["purl"])
-    assert_equal "golang", purl.type
-  end
-  
   def test_synced_types_from_official_spec
-    require "json"
-    
     project_root = File.dirname(__dir__)
     purl_types_data = JSON.parse(File.read(File.join(project_root, "purl-types.json")))
-    
+
     # Ensure we can handle all official types
     purl_types_data["types"].each do |type_name, type_config|
       examples = type_config["examples"]
       next unless examples && examples.is_a?(Array) && !examples.empty?
-      
+
       # Try the first example for each type
       example_purl = examples.first
-      
+
       begin
         purl = Purl::PackageURL.parse(example_purl)
         assert_equal type_name, purl.type, "Type mismatch for #{example_purl}"

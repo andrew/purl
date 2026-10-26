@@ -41,7 +41,7 @@ Enhancement suggestions are welcome! Please:
 
 ### Prerequisites
 
-- Ruby 3.1 or higher
+- Ruby 3.3 or higher
 - Bundler gem
 
 ### Setup
@@ -125,7 +125,7 @@ When modifying `purl-types.json`:
 
 ## PURL Specification Compliance
 
-This library maintains 100% compliance with the official PURL specification:
+This library is tested against the official PURL specification test suite in the `purl-spec` submodule. Cases that contradict other spec cases or the type definitions are listed in `KNOWN_FAILURES` in `test/test_purl_spec_compliance.rb`:
 
 - All changes must maintain compliance
 - Run `rake spec:compliance` before submitting
