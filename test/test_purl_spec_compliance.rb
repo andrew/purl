@@ -138,15 +138,9 @@ class TestPurlSpecCompliance < Minitest::Test
       # Try the first example for each type
       example_purl = examples.first
 
-      begin
-        purl = Purl::PackageURL.parse(example_purl)
-        assert_equal type_name, purl.type, "Type mismatch for #{example_purl}"
-        refute_nil purl.name, "Name should not be nil for #{example_purl}"
-      rescue => e
-        # Some examples might be intentionally complex or require special handling
-        # We'll skip for now but could be enhanced to handle these edge cases
-        skip "Complex example for #{type_name}: #{example_purl} - #{e.message}"
-      end
+      purl = Purl::PackageURL.parse(example_purl)
+      assert_equal type_name, purl.type, "Type mismatch for #{example_purl}"
+      refute_nil purl.name, "Name should not be nil for #{example_purl}"
     end
   end
 end

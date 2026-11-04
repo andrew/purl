@@ -571,6 +571,10 @@ module Purl
         errors << rule_error(error_class, component.to_sym, value, "#{@type} #{component} does not match #{pattern}")
       end
 
+      if @type == "git" && namespace&.include?("/")
+        errors << rule_error(InvalidNamespaceError, :namespace, namespace, "git namespaces are the host; the repository path belongs in the name")
+      end
+
       if @type == "cpan" && name.include?("::")
         errors << rule_error(InvalidNameError, :name, name, "cpan names are distribution names like URI-PackageURL, not module names like URI::PackageURL")
       end

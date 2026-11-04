@@ -836,6 +836,13 @@ class TestPurl < Minitest::Test
     purl = Purl.parse("pkg:git/github.com/farmakis/qPCP")
     assert_equal "pkg:git/github.com/farmakis/qPCP", purl.to_s
     assert_equal purl, Purl.parse(purl.to_s)
+    assert purl.valid?
+  end
+
+  def test_git_namespace_with_path_is_reported
+    purl = Purl::PackageURL.new(type: "git", namespace: "github.com/foo", name: "bar")
+    refute purl.valid?
+    assert_kind_of Purl::InvalidNamespaceError, purl.validation_errors.first
   end
 
   def test_output_matches_1x_encoding
