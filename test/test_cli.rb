@@ -245,6 +245,19 @@ class TestCLI < Minitest::Test
     assert_equal "7.0.0", result["components"]["version"]
   end
 
+  def test_generate_reports_type_rules_without_failing
+    stdout, stderr, status = run_cli("generate", "--type", "maven", "--name", "junit")
+    assert status.success?
+    assert_equal "pkg:maven/junit", stdout.strip
+    assert_includes stderr, "Breaks type rule: maven PURLs require a namespace"
+
+    stdout, _stderr, status = run_cli("--json", "generate", "--type", "maven", "--name", "junit")
+    assert status.success?
+    result = JSON.parse(stdout)
+    assert_equal false, result["valid"]
+    assert_equal ["maven PURLs require a namespace"], result["validation_errors"]
+  end
+
   def test_info_json_output_specific_type
     stdout, _stderr, status = run_cli("--json", "info", "gem")
     assert status.success?

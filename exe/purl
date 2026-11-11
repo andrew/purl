@@ -404,6 +404,8 @@ class PurlCLI
         result = {
           success: true,
           purl: purl.to_s,
+          valid: purl.valid?,
+          validation_errors: purl.validation_errors.map(&:message),
           components: {
             type: purl.type,
             namespace: purl.namespace,
@@ -416,6 +418,7 @@ class PurlCLI
         puts JSON.pretty_generate(result)
       else
         puts purl.to_s
+        purl.validation_errors.each { |error| warn "Breaks type rule: #{error.message}" }
       end
     rescue Purl::Error => e
       if @json_output

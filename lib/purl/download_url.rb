@@ -57,6 +57,8 @@ module Purl
         pattern: ->(purl) do
           # Maven: /{group_path}/{artifact}/{version}/{artifact}-{version}.jar
           # group_id uses dots, path uses slashes
+          next nil unless purl.namespace
+
           group_path = purl.namespace.gsub(".", "/")
           "#{group_path}/#{purl.name}/#{purl.version}/#{purl.name}-#{purl.version}.jar"
         end

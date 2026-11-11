@@ -52,7 +52,10 @@ module Purl
     def self.fast_decode(str)
       return str unless str.include?("%")
 
-      URI.decode_uri_component(str)
+      decoded = URI.decode_uri_component(str)
+      raise ArgumentError unless decoded.valid_encoding?
+
+      decoded
     rescue ArgumentError
       raise ParseError, "Invalid percent-encoding: #{str}"
     end
@@ -94,7 +97,6 @@ module Purl
     #
     # @raise [InvalidTypeError] if type is invalid
     # @raise [InvalidNameError] if name is invalid
-    # @raise [ValidationError] if any component fails type-specific validation
     #
     # @example
     #   purl = PackageURL.new(

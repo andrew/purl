@@ -23,7 +23,7 @@ This library features comprehensive error handling with namespaced error types, 
 - **Download URL generation** for 18 package ecosystems (gem, npm, cargo, maven, etc.)
 - **Security advisory lookup** - query security advisories from advisories.ecosyste.ms
 - **Package information lookup** - query package metadata from ecosyste.ms
-- **Type-specific validation** for conan, cran, and swift packages
+- **Type rule validation** from the purl-spec type definitions, reported by `valid?` and `validation_errors`
 - **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
 - **Rails-style route patterns** for registry URL templates
 - **Tested against** the official PURL specification test suite
@@ -206,7 +206,7 @@ Known PURL types:
     Registry support: No
     Reverse parsing: No
   ...
-Total types: 37
+Total types: 47
 Registry supported: 20
 ```
 
@@ -576,7 +576,7 @@ with_qualifiers = purl.with(qualifiers: purl.qualifiers.merge("signed" => "true"
 
 ```ruby
 # Get all known PURL types
-puts Purl.known_types.length          # => 37
+puts Purl.known_types.length          # => 47
 puts Purl.known_types.include?("gem") # => true
 
 # Check type support
@@ -714,15 +714,15 @@ The library supports 47 package types (42 official + 5 additional ecosystems):
 - `pub` - pub.dev/packages
 - `swift` - GitHub/GitLab/Bitbucket (derived from namespace)
 
-**All 37 Supported Types:**
-`alpm`, `apk`, `bioconductor`, `bitbucket`, `bitnami`, `cargo`, `clojars`, `cocoapods`, `composer`, `conan`, `conda`, `cpan`, `cran`, `deb`, `deno`, `docker`, `elm`, `gem`, `generic`, `github`, `golang`, `hackage`, `hex`, `homebrew`, `huggingface`, `luarocks`, `maven`, `mlflow`, `npm`, `nuget`, `oci`, `pub`, `pypi`, `qpkg`, `rpm`, `swid`, `swift`
+**All 47 Supported Types:**
+`alpm`, `apk`, `bazel`, `bioconductor`, `bitbucket`, `bitnami`, `brew`, `cargo`, `chrome-extension`, `clojars`, `cocoapods`, `composer`, `conan`, `conda`, `cpan`, `cran`, `deb`, `deno`, `docker`, `elm`, `gem`, `generic`, `git`, `github`, `golang`, `hackage`, `hex`, `homebrew`, `huggingface`, `julia`, `luarocks`, `maven`, `mlflow`, `npm`, `nuget`, `oci`, `opam`, `otp`, `pub`, `pypi`, `qpkg`, `rpm`, `swid`, `swift`, `vcpkg`, `vscode-extension`, `yocto`
 
 ## Specification Compliance
 
-- **100% compliance** with the official PURL specification test suite (59/59 tests passing)
-- **All 32 official package types** plus 5 additional ecosystem types supported
-- **Type-specific validation** for conan, cran, swift, cpan, and mlflow packages
-- **Proper error handling** for invalid PURLs that should be rejected
+- **Tested against** the official PURL specification test suite, with three cases that contradict other spec cases or type definitions listed as known failures
+- **All 42 official package types** plus 5 additional ecosystem types supported
+- **Type rules** from the purl-spec type definitions are reported by `valid?`, `validation_errors` and `validate!` rather than raised when parsing
+- **Malformed PURLs** raise `Purl::ParseError` or another `Purl::Error` subclass
 
 ## JSON Configuration
 

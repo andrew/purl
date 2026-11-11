@@ -747,6 +747,11 @@ class TestPurl < Minitest::Test
     assert_raises(Purl::ParseError) { Purl.parse("pkg:npm/foo?arch=%zz") }
   end
 
+  def test_parse_percent_encoded_invalid_utf8_raises_parse_error
+    assert_raises(Purl::ParseError) { Purl.parse("pkg:gem/ra%ffils") }
+    assert_raises(Purl::ParseError) { Purl.parse("pkg:gem/rails?arch=%ff") }
+  end
+
   def test_parse_drops_qualifiers_without_value
     purl = Purl.parse("pkg:golang/x/y?arch=&os&distro=fedora")
     assert_equal({ "distro" => "fedora" }, purl.qualifiers)
