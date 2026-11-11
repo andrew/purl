@@ -674,6 +674,7 @@ The library supports 47 package types (42 official + 5 additional ecosystems):
 - `clojars` (Clojure) - clojars.org
 - `cocoapods` (iOS) - cocoapods.org
 - `composer` (PHP) - packagist.org
+- `conan` (C/C++) - conan.io/center
 - `conda` (Python) - anaconda.org
 - `cpan` (Perl) - metacpan.org
 - `deno` (Deno) - deno.land/x
@@ -683,6 +684,8 @@ The library supports 47 package types (42 official + 5 additional ecosystems):
 - `hackage` (Haskell) - hackage.haskell.org
 - `hex` (Elixir) - hex.pm
 - `homebrew` (macOS) - formulae.brew.sh
+- `huggingface` (ML models) - huggingface.co
+- `luarocks` (Lua) - luarocks.org
 - `maven` (Java) - mvnrepository.com
 - `npm` (Node.js) - npmjs.com
 - `nuget` (.NET) - nuget.org
