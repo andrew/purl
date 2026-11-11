@@ -24,7 +24,7 @@ This library features comprehensive error handling with namespaced error types, 
 - **Security advisory lookup** - query security advisories from advisories.ecosyste.ms
 - **Package information lookup** - query package metadata from ecosyste.ms
 - **Type rule validation** from the purl-spec type definitions, reported by `valid?` and `validation_errors`
-- **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
+- **Registry URL generation** for package ecosystems such as npm, gem, maven and pypi
 - **Rails-style route patterns** for registry URL templates
 - **Tested against** the official PURL specification test suite
 - **Cross-language compatibility** with JSON-based configuration
@@ -207,7 +207,6 @@ Known PURL types:
     Reverse parsing: No
   ...
 Total types: 47
-Registry supported: 20
 ```
 
 #### Look Up Package Information
@@ -669,7 +668,7 @@ purl.validate!                          # raises Purl::InvalidQualifierError
 
 The library supports 47 package types (42 official + 5 additional ecosystems):
 
-**Registry URL Generation (20 types):**
+**Registry URL Generation:**
 - `bioconductor` (R/Bioconductor) - bioconductor.org
 - `cargo` (Rust) - crates.io
 - `clojars` (Clojure) - clojars.org
