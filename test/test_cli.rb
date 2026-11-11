@@ -71,6 +71,25 @@ class TestCLI < Minitest::Test
     assert_includes stdout, "Invalid PURL:"
   end
 
+  def test_validate_malformed_percent_encoding
+    stdout, _stderr, status = run_cli("validate", "pkg:npm/foo@1%zz")
+    refute status.success?
+    assert_includes stdout, "Invalid PURL: Invalid percent-encoding"
+  end
+
+  def test_validate_reports_type_rules
+    stdout, _stderr, status = run_cli("validate", "pkg:julia/Dates")
+    refute status.success?
+    assert_includes stdout, "uuid"
+  end
+
+  def test_parse_reports_type_rules_without_failing
+    stdout, _stderr, status = run_cli("parse", "pkg:julia/Dates")
+    assert status.success?
+    assert_includes stdout, "Breaks type rule: julia PURLs require the uuid qualifier"
+    refute_includes stdout, "Valid PURL"
+  end
+
   def test_generate_simple_purl
     stdout, _stderr, status = run_cli("generate", "--type", "gem", "--name", "rails")
     assert status.success?
@@ -224,6 +243,19 @@ class TestCLI < Minitest::Test
     assert_equal "gem", result["components"]["type"] 
     assert_equal "rails", result["components"]["name"]
     assert_equal "7.0.0", result["components"]["version"]
+  end
+
+  def test_generate_reports_type_rules_without_failing
+    stdout, stderr, status = run_cli("generate", "--type", "maven", "--name", "junit")
+    assert status.success?
+    assert_equal "pkg:maven/junit", stdout.strip
+    assert_includes stderr, "Breaks type rule: maven PURLs require a namespace"
+
+    stdout, _stderr, status = run_cli("--json", "generate", "--type", "maven", "--name", "junit")
+    assert status.success?
+    result = JSON.parse(stdout)
+    assert_equal false, result["valid"]
+    assert_equal ["maven PURLs require a namespace"], result["validation_errors"]
   end
 
   def test_info_json_output_specific_type

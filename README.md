@@ -4,7 +4,7 @@ A Ruby library for parsing, validating, and generating Package URLs (PURLs) as d
 
 This library features comprehensive error handling with namespaced error types, bidirectional registry URL conversion, and JSON-based configuration for cross-language compatibility.
 
-[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.1-red.svg)](https://www.ruby-lang.org/)
+[![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.3-red.svg)](https://www.ruby-lang.org/)
 [![Gem Version](https://badge.fury.io/rb/purl.svg)](https://rubygems.org/gems/purl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -17,16 +17,16 @@ This library features comprehensive error handling with namespaced error types, 
 ## Features
 
 - **Command-line interface** with parse, validate, convert, download, generate, info, lookup, and advisories commands plus JSON output
-- **Comprehensive PURL parsing and validation** with 37 package types (32 official + 5 additional ecosystems)
+- **Comprehensive PURL parsing and validation** with 47 package types (42 official + 5 additional ecosystems)
 - **Better error handling** with namespaced error classes and contextual information
 - **Bidirectional registry URL conversion** - generate registry URLs from PURLs and parse PURLs from registry URLs
 - **Download URL generation** for 18 package ecosystems (gem, npm, cargo, maven, etc.)
 - **Security advisory lookup** - query security advisories from advisories.ecosyste.ms
 - **Package information lookup** - query package metadata from ecosyste.ms
-- **Type-specific validation** for conan, cran, and swift packages
-- **Registry URL generation** for 20 package ecosystems (npm, gem, maven, pypi, etc.)
+- **Type rule validation** from the purl-spec type definitions, reported by `valid?` and `validation_errors`
+- **Registry URL generation** for package ecosystems such as npm, gem, maven and pypi
 - **Rails-style route patterns** for registry URL templates
-- **100% compliance** with official PURL specification test suite (59/59 tests passing)
+- **Tested against** the official PURL specification test suite
 - **Cross-language compatibility** with JSON-based configuration
 - **Comprehensive documentation** and examples
 
@@ -206,8 +206,7 @@ Known PURL types:
     Registry support: No
     Reverse parsing: No
   ...
-Total types: 37
-Registry supported: 20
+Total types: 47
 ```
 
 #### Look Up Package Information
@@ -576,7 +575,7 @@ with_qualifiers = purl.with(qualifiers: purl.qualifiers.merge("signed" => "true"
 
 ```ruby
 # Get all known PURL types
-puts Purl.known_types.length          # => 37
+puts Purl.known_types.length          # => 47
 puts Purl.known_types.include?("gem") # => true
 
 # Check type support
@@ -657,24 +656,25 @@ rescue Purl::ParseError => e
   puts "Value: #{e.value}"
 end
 
-# Type-specific validation errors
-begin
-  Purl::PackageURL.new(type: "swift", name: "Alamofire")  # Swift requires namespace
-rescue Purl::ValidationError => e
-  puts e.message  # => "Swift PURLs require a namespace to be unambiguous"
-end
+# Type rules from the purl-spec type definitions are reported, not raised,
+# so PURLs found in real data that break them can still be parsed
+purl = Purl.parse("pkg:julia/Dates")
+purl.valid?                             # => false
+purl.validation_errors.map(&:message)   # => ["julia PURLs require the uuid qualifier"]
+purl.validate!                          # raises Purl::InvalidQualifierError
 ```
 
 ### Supported Package Types
 
-The library supports 37 package types (32 official + 5 additional ecosystems):
+The library supports 47 package types (42 official + 5 additional ecosystems):
 
-**Registry URL Generation (20 types):**
+**Registry URL Generation:**
 - `bioconductor` (R/Bioconductor) - bioconductor.org
 - `cargo` (Rust) - crates.io
 - `clojars` (Clojure) - clojars.org
 - `cocoapods` (iOS) - cocoapods.org
 - `composer` (PHP) - packagist.org
+- `conan` (C/C++) - conan.io/center
 - `conda` (Python) - anaconda.org
 - `cpan` (Perl) - metacpan.org
 - `deno` (Deno) - deno.land/x
@@ -684,6 +684,8 @@ The library supports 37 package types (32 official + 5 additional ecosystems):
 - `hackage` (Haskell) - hackage.haskell.org
 - `hex` (Elixir) - hex.pm
 - `homebrew` (macOS) - formulae.brew.sh
+- `huggingface` (ML models) - huggingface.co
+- `luarocks` (Lua) - luarocks.org
 - `maven` (Java) - mvnrepository.com
 - `npm` (Node.js) - npmjs.com
 - `nuget` (.NET) - nuget.org
@@ -714,15 +716,15 @@ The library supports 37 package types (32 official + 5 additional ecosystems):
 - `pub` - pub.dev/packages
 - `swift` - GitHub/GitLab/Bitbucket (derived from namespace)
 
-**All 37 Supported Types:**
-`alpm`, `apk`, `bioconductor`, `bitbucket`, `bitnami`, `cargo`, `clojars`, `cocoapods`, `composer`, `conan`, `conda`, `cpan`, `cran`, `deb`, `deno`, `docker`, `elm`, `gem`, `generic`, `github`, `golang`, `hackage`, `hex`, `homebrew`, `huggingface`, `luarocks`, `maven`, `mlflow`, `npm`, `nuget`, `oci`, `pub`, `pypi`, `qpkg`, `rpm`, `swid`, `swift`
+**All 47 Supported Types:**
+`alpm`, `apk`, `bazel`, `bioconductor`, `bitbucket`, `bitnami`, `brew`, `cargo`, `chrome-extension`, `clojars`, `cocoapods`, `composer`, `conan`, `conda`, `cpan`, `cran`, `deb`, `deno`, `docker`, `elm`, `gem`, `generic`, `git`, `github`, `golang`, `hackage`, `hex`, `homebrew`, `huggingface`, `julia`, `luarocks`, `maven`, `mlflow`, `npm`, `nuget`, `oci`, `opam`, `otp`, `pub`, `pypi`, `qpkg`, `rpm`, `swid`, `swift`, `vcpkg`, `vscode-extension`, `yocto`
 
 ## Specification Compliance
 
-- **100% compliance** with the official PURL specification test suite (59/59 tests passing)
-- **All 32 official package types** plus 5 additional ecosystem types supported
-- **Type-specific validation** for conan, cran, swift, cpan, and mlflow packages
-- **Proper error handling** for invalid PURLs that should be rejected
+- **Tested against** the official PURL specification test suite, with three cases that contradict other spec cases or type definitions listed as known failures
+- **All 42 official package types** plus 5 additional ecosystem types supported
+- **Type rules** from the purl-spec type definitions are reported by `valid?`, `validation_errors` and `validate!` rather than raised when parsing
+- **Malformed PURLs** raise `Purl::ParseError` or another `Purl::Error` subclass
 
 ## JSON Configuration
 
@@ -803,7 +805,9 @@ The submodule is automatically updated weekly via Dependabot, ensuring tests sta
 
 - `rake spec:update` - Update the purl-spec submodule to the latest upstream commit
 - `rake spec:stats` - Show statistics about the purl-spec test cases
+- `rake spec:sync_types` - Copy type rules from the purl-spec type definitions into `purl-types.json`
 - `rake spec:compliance` - Run compliance tests against official test suite  
+- `rake spec:debug` - List every failing purl-spec case, including known failures
 - `rake spec:types` - Show information about all PURL types and their support
 - `rake spec:verify_types` - Verify our types list against official specification
 

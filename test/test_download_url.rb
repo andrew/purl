@@ -107,6 +107,11 @@ class TestDownloadURL < Minitest::Test
     assert_equal "https://gems.explicit.com/downloads/rails-7.0.0.gem", custom_url
   end
 
+  def test_maven_download_url_without_namespace
+    purl = Purl::PackageURL.new(type: "maven", name: "junit", version: "4.13")
+    assert_raises(Purl::UnsupportedTypeError) { purl.download_url }
+  end
+
   def test_maven_download_url_with_custom_repository
     purl = Purl::PackageURL.new(
       type: "maven",

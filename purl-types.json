@@ -1,8 +1,8 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Official PURL types with registry configurations",
   "source": "https://github.com/package-url/purl-spec",
-  "last_updated": "2025-07-27",
+  "last_updated": "2026-10-24",
   "types": {
     "alpm": {
       "description": "Arch Linux packages and other users of the libalpm/pacman package manager.",
@@ -11,7 +11,10 @@
         "pkg:alpm/arch/pacman@6.0.1-1?arch=x86_64",
         "pkg:alpm/arch/python-pip@21.0-1?arch=any",
         "pkg:alpm/arch/containers-common@1:0.47.4-4?arch=x86_64"
-      ]
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "apk": {
       "description": "Alpine Linux APK-based packages",
@@ -19,7 +22,10 @@
       "examples": [
         "pkg:apk/alpine/curl@7.83.0-r0?arch=x86",
         "pkg:apk/alpine/apk@2.12.9-r3?arch=x86"
-      ]
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "bitbucket": {
       "description": "Bitbucket-based packages",
@@ -28,7 +34,10 @@
         "pkg:bitbucket/atlassian/python-bitbucket@0.1.0",
         "pkg:bitbucket/birkenfeld/pygments-main@2.13.0",
         "pkg:bitbucket/pygame/pygame@2.1.2"
-      ]
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "bitnami": {
       "description": "Bitnami-based packages",
@@ -38,7 +47,9 @@
         "pkg:bitnami/wordpress@6.2.0?distro=debian-12",
         "pkg:bitnami/wordpress@6.2.0?arch=arm64&distro=debian-12",
         "pkg:bitnami/wordpress@6.2.0?arch=arm64&distro=photon-4"
-      ]
+      ],
+      "namespace_requirement": "prohibited",
+      "name_case_sensitive": false
     },
     "cargo": {
       "description": "Cargo packages for Rust",
@@ -56,7 +67,8 @@
           "namespace": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "prohibited"
     },
     "cocoapods": {
       "description": "CocoaPods pods",
@@ -74,12 +86,12 @@
           "namespace": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "prohibited"
     },
     "composer": {
       "description": "Composer PHP packages",
       "default_registry": "https://packagist.org",
-      "namespace_requirement": "required",
       "examples": [
         "pkg:composer/symfony/console@6.1.7",
         "pkg:composer/laravel/framework@9.42.2",
@@ -94,7 +106,10 @@
           "namespace_required": true,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "conan": {
       "description": "Conan C/C++ packages. The purl is designed to closely resemble the Conan-native <package-name>/<package-version>@<user>/<channel> syntax for package references as specified in https://docs.conan.io/en/1.46/cheatsheet.html#package-terminology",
@@ -112,7 +127,8 @@
           "namespace": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "optional"
     },
     "conda": {
       "description": "conda is for Conda packages",
@@ -130,7 +146,8 @@
           "namespace": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "prohibited"
     },
     "cpan": {
       "description": "CPAN Perl packages",
@@ -148,17 +165,18 @@
           "namespace": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "optional"
     },
     "cran": {
       "description": "CRAN R packages",
       "default_registry": "https://cran.r-project.org",
-      "namespace_requirement": "prohibited",
       "examples": [
         "pkg:cran/ggplot2@3.4.0",
         "pkg:cran/dplyr@1.0.10",
         "pkg:cran/devtools@2.4.5"
-      ]
+      ],
+      "namespace_requirement": "prohibited"
     },
     "deb": {
       "description": "Debian packages, Debian derivatives, and Ubuntu packages",
@@ -169,7 +187,10 @@
         "pkg:deb/ubuntu/dpkg@1.19.0.4?arch=amd64",
         "pkg:deb/debian/attr@1:2.4.47-2?arch=source",
         "pkg:deb/debian/attr@1:2.4.47-2%2Bb1?arch=amd64"
-      ]
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "docker": {
       "description": "for Docker images",
@@ -178,12 +199,12 @@
         "pkg:docker/nginx@1.21.6",
         "pkg:docker/ubuntu@20.04",
         "pkg:docker/node@18.12.1"
-      ]
+      ],
+      "namespace_requirement": "optional"
     },
     "gem": {
       "description": "RubyGems",
       "default_registry": "https://rubygems.org",
-      "namespace_requirement": "prohibited",
       "examples": [
         "pkg:gem/ruby-advisory-db-check@0.12.4",
         "pkg:gem/rails@7.0.4",
@@ -199,7 +220,8 @@
           "version_in_url": true,
           "version_path": "/versions/"
         }
-      }
+      },
+      "namespace_requirement": "prohibited"
     },
     "generic": {
       "description": "The generic type is for plain, generic packages that do not fit anywhere else such as for \"upstream-from-distro\" packages. In particular this is handy for a plain version control repository such as a bare git repo in combination with a vcs_url.",
@@ -208,7 +230,8 @@
         "pkg:generic/openssl@1.1.10g",
         "pkg:generic/openssl@1.1.10g?download_url=https://openssl.org/source/openssl-1.1.0g.tar.gz&checksum=sha256:de4d501267da",
         "pkg:generic/bitwarderl?vcs_url=git%2Bhttps://git.fsfe.org/dxtr/bitwarderl%40cc55108da32"
-      ]
+      ],
+      "namespace_requirement": "optional"
     },
     "github": {
       "description": "GitHub-based packages",
@@ -217,7 +240,10 @@
         "pkg:github/torvalds/linux@6.1",
         "pkg:github/microsoft/vscode@1.74.2",
         "pkg:github/npm/cli@9.2.0"
-      ]
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "golang": {
       "description": "Go packages",
@@ -238,7 +264,8 @@
           "version_in_url": false,
           "special_handling": "golang_import_path"
         }
-      }
+      },
+      "namespace_requirement": "required"
     },
     "hackage": {
       "description": "Haskell packages",
@@ -258,7 +285,8 @@
           "version_in_url": true,
           "version_separator": "-"
         }
-      }
+      },
+      "namespace_requirement": "prohibited"
     },
     "hex": {
       "description": "Hex packages",
@@ -276,7 +304,10 @@
           "namespace": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "optional",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "huggingface": {
       "description": "Hugging Face ML models",
@@ -295,7 +326,9 @@
           "namespace_required": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "required",
+      "version_case_sensitive": false
     },
     "luarocks": {
       "description": "Lua packages installed with LuaRocks",
@@ -315,13 +348,15 @@
           "namespace_required": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "optional",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
     },
     "maven": {
       "description": "PURL type for Maven JARs and related artifacts.",
       "default_registry": "https://repo.maven.apache.org/maven2",
       "ecosystems_registry": "repo1.maven.org",
-      "namespace_requirement": "required",
       "examples": [
         "pkg:maven/org.apache.commons/commons-lang3@3.12.0",
         "pkg:maven/junit/junit@4.13.2",
@@ -338,7 +373,8 @@
           "version_in_url": true,
           "version_path": "/"
         }
-      }
+      },
+      "namespace_requirement": "required"
     },
     "mlflow": {
       "description": "MLflow ML models (Azure ML, Databricks, etc.)",
@@ -346,13 +382,13 @@
       "examples": [
         "pkg:mlflow/creditfraud@3?repository_url=https://westus2.api.azureml.ms/mlflow/v1.0/subscriptions/a50f2011-fab8-4164-af23-c62881ef8c95/resourceGroups/TestResourceGroup/providers/Microsoft.MachineLearningServices/workspaces/TestWorkspace",
         "pkg:mlflow/trafficsigns@10?model_uuid=36233173b22f4c89b451f1228d700d49&run_id=410a3121-2709-4f88-98dd-dba0ef056b0a&repository_url=https://adb-5245952564735461.0.azuredatabricks.net/api/2.0/mlflow"
-      ]
+      ],
+      "namespace_requirement": "prohibited"
     },
     "npm": {
       "description": "PURL type for npm packages.",
       "default_registry": "https://registry.npmjs.org",
       "ecosystems_registry": "npmjs.org",
-      "namespace_requirement": "optional",
       "examples": [
         "pkg:npm/@babel/core@7.20.0",
         "pkg:npm/lodash@4.17.21",
@@ -372,7 +408,8 @@
           "version_in_url": true,
           "version_path": "/v/"
         }
-      }
+      },
+      "namespace_requirement": "optional"
     },
     "nuget": {
       "description": "NuGet .NET packages",
@@ -392,7 +429,8 @@
           "version_in_url": true,
           "version_path": "/"
         }
-      }
+      },
+      "namespace_requirement": "prohibited"
     },
     "oci": {
       "description": "For artifacts stored in registries that conform to the OCI Distribution Specification https://github.com/opencontainers/distribution-spec including container images built by Docker and others",
@@ -402,7 +440,10 @@
         "pkg:oci/debian@sha256%3A244fd47e07d10?repository_url=ghcr.io/debian&tag=bullseye",
         "pkg:oci/static@sha256%3A244fd47e07d10?repository_url=gcr.io/distroless/static&tag=latest",
         "pkg:oci/hello-wasm@sha256%3A244fd47e07d10?tag=v1"
-      ]
+      ],
+      "namespace_requirement": "prohibited",
+      "name_case_sensitive": false,
+      "version_case_sensitive": false
     },
     "pub": {
       "description": "Dart and Flutter pub packages",
@@ -420,7 +461,10 @@
           "namespace": false,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "prohibited",
+      "name_case_sensitive": false,
+      "name_permitted_characters": "^[a-z0-9_]"
     },
     "pypi": {
       "description": "Python packages",
@@ -441,7 +485,10 @@
           "version_path": "/",
           "trailing_slash": true
         }
-      }
+      },
+      "namespace_requirement": "prohibited",
+      "name_case_sensitive": false,
+      "version_case_sensitive": false
     },
     "qpkg": {
       "description": "QNX packages",
@@ -449,7 +496,9 @@
       "examples": [
         "pkg:qpkg/blackberry/com.qnx.sdp@7.0.0.SGA201702151847",
         "pkg:qpkg/blackberry/com.qnx.qnx710.foo.bar.qux@0.0.4.01449T202205040833L"
-      ]
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false
     },
     "rpm": {
       "description": "RPM packages",
@@ -457,7 +506,9 @@
       "examples": [
         "pkg:rpm/fedora/curl@7.50.3-1.fc25?arch=i386&distro=fedora-25",
         "pkg:rpm/fedora/centerim@4.22.10-1.el6?arch=i686&epoch=1&distro=fedora-25"
-      ]
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false
     },
     "swid": {
       "description": "PURL type for ISO-IEC 19770-2 Software Identification (SWID) tags.",
@@ -466,12 +517,15 @@
         "pkg:swid/Acme/example.com/Enterprise+Server@1.0.0?tag_id=75b8c285-fa7b-485b-b199-4745e3004d0d",
         "pkg:swid/Fedora@29?tag_id=org.fedoraproject.Fedora-29",
         "pkg:swid/Adobe+Systems+Incorporated/Adobe+InDesign@CC?tag_id=CreativeCloud-CS6-Win-GM-MUL"
+      ],
+      "namespace_requirement": "optional",
+      "required_qualifiers": [
+        "tag_id"
       ]
     },
     "swift": {
       "description": "Swift packages",
       "default_registry": "https://swiftpackageindex.com",
-      "namespace_requirement": "required",
       "examples": [
         "pkg:swift/github.com/Alamofire/Alamofire@5.6.4",
         "pkg:swift/github.com/apple/swift-package-manager@1.7.0"
@@ -485,7 +539,8 @@
           "namespace_required": true,
           "version_in_url": false
         }
-      }
+      },
+      "namespace_requirement": "required"
     },
     "clojars": {
       "description": "Clojars packages",
@@ -578,6 +633,118 @@
           "version_in_url": false
         }
       }
+    },
+    "bazel": {
+      "description": "Bazel modules",
+      "default_registry": "https://bcr.bazel.build",
+      "examples": [
+        "pkg:bazel/rules_java@7.8.0",
+        "pkg:bazel/curl@8.8.0.bcr.1",
+        "pkg:bazel/curl@8.8.0?repository_url=https:%2F%2Fexample.org%2Fbazel-registry"
+      ],
+      "namespace_requirement": "prohibited"
+    },
+    "brew": {
+      "description": "Homebrew",
+      "default_registry": "https://formulae.brew.sh/",
+      "examples": [
+        "pkg:brew/sqlite@3.43.2",
+        "pkg:brew/go",
+        "pkg:brew/postgresql%4012@12.17"
+      ],
+      "namespace_requirement": "optional",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false
+    },
+    "chrome-extension": {
+      "description": "Chrome Browser Extensions",
+      "default_registry": "https://chromewebstore.google.com/",
+      "examples": [
+        "pkg:chrome-extension/hlepfoohegkhhmjieoechaddaejaokhf@25.7.1",
+        "pkg:chrome-extension/dncgedbnidfkppmdgfgidcepclnokpkb@6.0.2.3611",
+        "pkg:chrome-extension/kanfjhdeebkfgkbmnfknhejpadhlmiab@0.6"
+      ],
+      "namespace_requirement": "prohibited",
+      "name_case_sensitive": false,
+      "name_permitted_characters": "^[a-p]{32}$",
+      "version_permitted_characters": "^\\d+(\\.\\d+){0,3}$"
+    },
+    "git": {
+      "description": "Git",
+      "default_registry": null,
+      "examples": [
+        "pkg:git/codeberg.org/forgejo/forgejo@a72d2c07cfca03b55371089de6aa230d8c951fa0#options/locale_readme.md",
+        "pkg:git/cygwin.com/cgit/newlib-cygwin@6d049c54c3314da31d9ffac133a6a2f2dfecaac2",
+        "pkg:git/projects.blender.org/blender/blender.git"
+      ],
+      "namespace_requirement": "required"
+    },
+    "julia": {
+      "description": "Julia Package",
+      "default_registry": "https://github.com/JuliaRegistries/General",
+      "examples": [
+        "pkg:julia/Dates@1.9.0?uuid=ade2ca70-3891-5945-98fb-dc099432e06a",
+        "pkg:julia/Dates?uuid=ade2ca70-3891-5945-98fb-dc099432e06a",
+        "pkg:julia/RegisterQD@0.3.1?uuid=ac24ea0c-1830-11e9-18d4-81f172323054"
+      ],
+      "namespace_requirement": "prohibited",
+      "required_qualifiers": [
+        "uuid"
+      ]
+    },
+    "opam": {
+      "description": "Opam package",
+      "default_registry": "https://opam.ocaml.org",
+      "examples": [
+        "pkg:opam/ocaml-base-compiler@5.2.0",
+        "pkg:opam/git@3/16.1"
+      ],
+      "namespace_requirement": "prohibited"
+    },
+    "otp": {
+      "description": "BEAM/OTP Application",
+      "default_registry": null,
+      "examples": [
+        "pkg:otp/erts@10.6.3?platform=linux&arch=amd64&repository_url=https:%2F%2Fgithub.com%2Ferlang%2Fotp&vcs_url=git%2Bhttps:%2F%2Fgithub.com%2Ferlang%2Fotp.git",
+        "pkg:otp/stdlib@3.11.2?repository_url=https:%2F%2Fgithub.com%2Ferlang%2Fotp&vcs_url=git%2Bhttps:%2F%2Fgithub.com%2Ferlang%2Fotp.git",
+        "pkg:otp/crypto@4.6.4?platform=darwin&arch=x86_64&repository_url=https:%2F%2Fgithub.com%2Ferlang%2Fotp&vcs_url=git%2Bhttps:%2F%2Fgithub.com%2Ferlang%2Fotp.git"
+      ],
+      "namespace_requirement": "prohibited",
+      "name_case_sensitive": false
+    },
+    "vcpkg": {
+      "description": "Vcpkg C/C++ packages",
+      "default_registry": "https://github.com/microsoft/vcpkg/",
+      "examples": [
+        "pkg:vcpkg/bzip2@1.0.8?port_version=6",
+        "pkg:vcpkg/zlib@1.3.1?triplet=x64-linux&vcs_url=git%2Bhttps:%2F%2Fgithub.com%2Fmicrosoft%2Fvcpkg%40b5d3197b1a8a3f4c2d9e0f1a2b3c4d5e6f708192",
+        "pkg:vcpkg/ffmpeg@5.1.2?repository_url=https:%2F%2Fgithub.com%2Fazure-sdk%2Fvcpkg"
+      ],
+      "namespace_requirement": "prohibited"
+    },
+    "vscode-extension": {
+      "description": "VS Code Extension packages",
+      "default_registry": "https://marketplace.visualstudio.com/vscode",
+      "examples": [
+        "pkg:vscode-extension/ms-python/python@2023.25.10292213",
+        "pkg:vscode-extension/muhammad-sammy/csharp@2.15.30?repository_url=https:%2F%2Fopen-vsx.org",
+        "pkg:vscode-extension/golang/go@0.39.1?platform=win32-x64"
+      ],
+      "namespace_requirement": "required",
+      "namespace_case_sensitive": false,
+      "name_case_sensitive": false,
+      "version_case_sensitive": false
+    },
+    "yocto": {
+      "description": "Yocto Project",
+      "default_registry": null,
+      "examples": [
+        "pkg:yocto/core/glibc@2.35",
+        "pkg:yocto/core/glibc@2.35&repository_url=https:%2F%2Fgit.openembedded.org%2Fopenembedded-core&layer_version=kirkstone",
+        "pkg:yocto/core/glibc@2.35&repository_url=https:%2F%2Fgit.openembedded.org%2Fopenembedded-core&layer_version=25ba9895b9"
+      ],
+      "namespace_requirement": "optional",
+      "namespace_case_sensitive": false
     }
   }
 }
