@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Qualifier values containing `?`, such as `repository_url=https://pkgs.alpinelinux.org/packages?branch=edge`, parse instead of being read as part of the name.
 - An unencoded npm scope without a version, such as `pkg:npm/@babel/core#lib`, parses instead of raising.
 - Malformed percent-encoding such as `%zz` raises `Purl::ParseError` instead of `ArgumentError`.
+- Namespaces are decoded once, so a literal `%` written as `%25`, such as `pkg:generic/foo%25FF/bar`, parses and round trips.
 - Qualifiers with an empty value, such as `?arch=`, are dropped when parsing, as the spec requires.
 
 ## [1.8.1] - 2026-04-13

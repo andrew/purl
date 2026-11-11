@@ -752,6 +752,16 @@ class TestPurl < Minitest::Test
     assert_raises(Purl::ParseError) { Purl.parse("pkg:gem/rails?arch=%ff") }
   end
 
+  def test_namespace_is_decoded_once
+    ["pkg:generic/foo%25FF/bar", "pkg:generic/foo%25zz/bar", "pkg:generic/a%252Fb/bar"].each do |input|
+      purl = Purl.parse(input)
+      assert_equal input, purl.to_s
+      assert_equal purl, Purl.parse(purl.to_s)
+    end
+    assert_equal "foo%FF", Purl.parse("pkg:generic/foo%25FF/bar").namespace
+    assert_equal "a%2Fb", Purl::PackageURL.new(type: "generic", namespace: "a%2Fb", name: "bar").namespace
+  end
+
   def test_parse_drops_qualifiers_without_value
     purl = Purl.parse("pkg:golang/x/y?arch=&os&distro=fedora")
     assert_equal({ "distro" => "fedora" }, purl.qualifiers)

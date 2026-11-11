@@ -519,19 +519,6 @@ module Purl
       namespace_str = namespace.to_s.strip
       return nil if namespace_str.empty?
 
-      # Check that decoded namespace segments don't contain '/'
-      namespace_str.split("/").each do |segment|
-        decoded_segment = self.class.fast_decode(segment)
-        if decoded_segment.include?("/")
-          raise InvalidNamespaceError.new(
-            "Namespace segments cannot contain '/' after URL decoding",
-            component: :namespace,
-            value: namespace,
-            rule: "no '/' in decoded segments"
-          )
-        end
-      end
-      
       case @type
       when "bitbucket", "github", "composer"
         namespace_str.downcase
