@@ -507,7 +507,7 @@ module Purl
       when "bitbucket", "github", "composer"
         name_str.downcase
       when "pypi"
-        name_str.downcase.gsub("_", "-")
+        name_str.downcase.gsub(/[-_.]+/, "-")
       else
         name_str
       end
