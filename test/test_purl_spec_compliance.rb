@@ -13,7 +13,12 @@ class TestPurlSpecCompliance < Minitest::Test
     ["gem-test.json", "parse", "pkg:gem/jruby-launcher@1.1.2?Platform=java"],
     ["rpm-test.json", "parse", "pkg:Rpm/fedora/curl@7.50.3-1.fc25?Arch=i386&Distro=fedora-25"],
     # A recommended case that lowercases, while git-definition.json marks namespace and name case sensitive
-    ["git-test.json", "validate", "pkg:git/github/Package-url/purl-Spec@244fd47e07d1004f0aed9c"]
+    ["git-test.json", "validate", "pkg:git/github/Package-url/purl-Spec@244fd47e07d1004f0aed9c"],
+    # The case description is in the subpath field
+    ["pypi-test.json", "parse", "pkg:pypi/My.PyPI_.--._Package@1.11.1.dev1"],
+    ["pypi-test.json", "build", JSON.generate({ "type" => "pypi", "namespace" => nil, "name" => "My.PyPI_.--._Package",
+                                                "version" => "1.11.1.dev1", "qualifiers" => nil,
+                                                "subpath" => "Applied normalization_rules to convert input string to valid form." })]
   ].freeze
 
 

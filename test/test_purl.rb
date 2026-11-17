@@ -810,6 +810,13 @@ class TestPurl < Minitest::Test
     assert_equal "1.0RC1", Purl.parse("pkg:pypi/Django_Rest@1.0RC1").version
   end
 
+  def test_pypi_name_separators_normalize_to_single_dash
+    assert_equal "zope-interface", Purl.parse("pkg:pypi/zope.interface@5.0").name
+    assert_equal "my-pypi-package", Purl.parse("pkg:pypi/My.PyPI_.--._Package@1.0").name
+    assert_equal "pkg:pypi/friendly-bard@1.0",
+                 Purl::PackageURL.new(type: "pypi", name: "friendly__bard", version: "1.0").to_s
+  end
+
   def test_type_definition_permitted_characters
     refute Purl.parse("pkg:chrome-extension/dogs").valid?
     refute Purl.parse("pkg:chrome-extension/dlpngalgnefjeiefhmpklpfiohadpglk@1.2.3-beta").valid?
